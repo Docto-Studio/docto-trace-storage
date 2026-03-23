@@ -10,7 +10,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python" />
   <img src="https://img.shields.io/badge/version-0.1.0--alpha-orange" />
-  <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/license-Apache_2.0-blue" />
   <img src="https://img.shields.io/badge/read--only-true-red" />
 </p>
 
@@ -205,4 +205,4 @@ docto_trace/
 
 ## License
 
-MIT © [Docto Studio](https://github.com/Docto-Studio)
+Apache 2.0 © [Docto Studio](https://github.com/Docto-Studio)
