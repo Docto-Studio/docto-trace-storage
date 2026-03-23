@@ -19,7 +19,7 @@
 
 ## What is this?
 
-`docto-trace-storage` maps the "digital chaos" inside your Google Drive. It recursively traverses your entire storage, calculates the **true size** of every folder (something the native Drive UI doesn't show), detects **zombie files** that haven't been touched in years, and surfaces **duplicate content** wasting your quota — all from your own machine, never touching Docto servers.
+`docto-trace-storage` is a high-performance, open-source data auditing tool. It is the first module of the **Docto Trace** suite, designed to map and analyze "digital chaos" across cloud storage providers (starting with Google Drive). The goal is to provide deep visibility into storage structures, identifying **digital dementia** (orphaned files, zombies, and duplicates) to prepare organizations for **AI-readiness** and **Centralized Memory** — all safely from your own machine.
 
 > **Read-Only, always.** The tool _never_ modifies or deletes files. It only observes and reports.
 
@@ -39,9 +39,10 @@
 | Deep folder detection | ✅ v0.1 |
 | `report.json` export (strict Pydantic schema) | ✅ v0.1 |
 | Rich terminal summary | ✅ v0.1 |
-| 🧟 Zombie file detection (stale > N months) | ✅ **v0.2** |
+| 🧟 Digital Dementia detection (stale > N months) | ✅ **v0.2** |
 | ♻️ Content deduplication (MD5 + fallback) | ✅ **v0.2** |
 | Duplicate file path tracing | ✅ **v0.2** |
+| 📊 Modern Streamlit Dashboard UI (`--ui`) | ✅ **v0.2** |
 | Actionable remediation `action_plan` | ✅ **v0.2** |
 | Bundled credentials (zero-setup for end users) | ✅ **v0.2** |
 | Bring Your Own Credentials (`setup` wizard) | ✅ **v0.2** |
@@ -159,6 +160,14 @@ docto-trace logout          # clear session
 
 ## CLI Reference
 
+### `docto-trace ui`
+
+Launches a modern, sleek, interactive Streamlit dashboard to visualize the generated `report.json`. Features a beautiful Dark Theme, Top 10 folder grid, precise data storage metrics, and actionable item tables for addressing Digital Dementia.
+
+```bash
+docto-trace ui output/report.json
+```
+
 ### `docto-trace --version` / `-v`
 
 ```bash
@@ -202,6 +211,9 @@ The core command. Traverses Google Drive, runs all audits, and produces `report.
 # Full scan with defaults
 docto-trace scan
 
+# Scan and automatically launch the interactive UI dashboard
+docto-trace scan --ui
+
 # Narrow to a specific folder by Drive ID
 docto-trace scan --root-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
 
@@ -227,6 +239,7 @@ docto-trace scan --service-account ./sa-key.json
 | `--stale-threshold` / `-S` | `24` | Months without modification = zombie |
 | `--credentials` / `-c` | `credentials.json` | OAuth2 credentials file |
 | `--output` / `-o` | `output/` | Directory for `report.json` |
+| `--ui` / `--no-ui` | `--no-ui` | Auto-launch Streamlit dashboard |
 | `--service-account` / `-s` | _(none)_ | Service account key path |
 
 ---
@@ -411,7 +424,7 @@ docto_trace/
 | Version | Focus |
 |---|---|
 | v0.1 | Structural mapping — folder sizes, deep nesting |
-| **v0.2** | **Data hygiene — zombie detection, deduplication, bundled credentials, auth lifecycle** |
+| **v0.2** | **Data hygiene — digital dementia detection, deduplication, Streamlit UI dashboard, auth lifecycle** |
 | v0.3 | Extended reporting — owner analysis, sharing audit, cost estimation |
 | v0.4 | AI readiness score — structured/unstructured ratio, naming entropy |
 
