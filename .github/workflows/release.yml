@@ -1,0 +1,73 @@
+name: Release to PyPI
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    name: Build & publish to PyPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Inject the bundled OAuth2 client credentials from the GitHub secret.
+      # The file is gitignored and never committed — it lives only in the built
+      # wheel artefact. The secret value is the raw JSON content of the file.
+      # -----------------------------------------------------------------------
+      - name: Inject bundled credentials
+        env:
+          DOCTO_CLIENT_JSON: ${{ secrets.DOCTO_CLIENT_JSON }}
+        run: |
+          echo "$DOCTO_CLIENT_JSON" > docto_trace/data/docto_client.json
+          echo "✅ docto_client.json written ($(wc -c < docto_trace/data/docto_client.json) bytes)"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Verify credentials are bundled in wheel
+        run: |
+          python -c "
+          import zipfile, sys
+          whl = next(p for p in __import__('pathlib').Path('dist').glob('*.whl'))
+          files = zipfile.ZipFile(whl).namelist()
+          if not any('docto_client.json' in f for f in files):
+              print('❌ docto_client.json missing from wheel!')
+              sys.exit(1)
+          print(f'✅ Credentials bundled in {whl.name}')
+          "
+
+      - name: Twine check
+        run: python -m twine check dist/*
+
+      # -----------------------------------------------------------------------
+      # Publish to PyPI using the PYPI_TOKEN secret.
+      # Add a TESTPYPI_TOKEN secret and uncomment the testpypi step to also
+      # publish to TestPyPI before the production release.
+      # -----------------------------------------------------------------------
+      - name: Publish to TestPyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI_TOKEN }}
+        run: python -m twine upload --repository testpypi dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: python -m twine upload dist/*

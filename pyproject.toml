@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "docto-trace-storage"
+version = "0.2.0"
+description = "Deep storage auditing for Google Drive — part of the Docto Trace suite."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+keywords = ["google-drive", "audit", "storage", "cli", "docto", "deduplication", "zombie-files"]
+authors = [
+  { name = "Docto Studio", email = "studio@docto.ai" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: System :: Filesystems",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "typer>=0.12.0",
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+  "google-api-python-client>=2.120.0",
+  "google-auth>=2.29.0",
+  "google-auth-oauthlib>=1.2.0",
+  "google-auth-httplib2>=0.2.0",
+  "rich>=13.7.0",
+  "anyio>=4.3.0",
+  "python-dateutil>=2.9.0",   # Used by auditor.py (relativedelta for zombie detection)
+  "litellm>=1.0.0",           # Used for AI Readiness Score LLM analysis
+  "python-dotenv>=1.0.0",     # Loads .env variables into os.environ for LiteLLM
+  "pyfiglet>=1.0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.4.0",
+  "mypy>=1.9.0",
+  "twine>=5.0.0",
+  "build>=1.2.0",
+]
+ui = [
+  "streamlit>=1.30.0",
+  "plotly>=5.18.0",
+  "pandas>=2.0.0",
+]
+
+[project.scripts]
+docto-trace = "docto_trace.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/Docto-Studio/docto-trace-storage"
+Repository = "https://github.com/Docto-Studio/docto-trace-storage"
+"Bug Tracker" = "https://github.com/Docto-Studio/docto-trace-storage/issues"
+Changelog = "https://github.com/Docto-Studio/docto-trace-storage/releases"
+
+# ---------------------------------------------------------------------------
+# Build — include the bundled credentials as a package resource
+# ---------------------------------------------------------------------------
+
+[tool.hatch.build.targets.wheel]
+# `packages` causes hatchling to exclude gitignored files (credentials.json
+# is gitignored). Using `include` globs as the sole selector bypasses this.
+# The bundled file is named docto_client.json to avoid the gitignore exclusion.
+include = [
+  "docto_trace/**/*.py",
+  "docto_trace/data/docto_client.json",
+]
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

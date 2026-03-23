@@ -1,0 +1,46 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+.env
+
+# --- Sensitive / Secrets ---
+credentials.json
+credentials*.json
+docto_client.json      # bundled credentials — injected by CI, never committed
+token.json
+token*.json
+service_account*.json
+*.p12
+*.pem
+.pypirc
+
+# --- Output artifacts ---
+output/
+*.report.json
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
