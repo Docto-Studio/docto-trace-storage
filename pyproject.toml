@@ -40,6 +40,7 @@ dependencies = [
   "python-dateutil>=2.9.0",   # Used by auditor.py (relativedelta for zombie detection)
   "litellm>=1.0.0",           # Used for AI Readiness Score LLM analysis
   "python-dotenv>=1.0.0",     # Loads .env variables into os.environ for LiteLLM
+  "pyfiglet>=1.0.2",
 ]
 
 [project.optional-dependencies]

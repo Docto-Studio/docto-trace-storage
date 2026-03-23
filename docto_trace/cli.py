@@ -6,6 +6,7 @@ Registers sub-commands and exposes the --version flag.
 
 from __future__ import annotations
 
+import pyfiglet
 import typer
 from rich import print as rprint
 
@@ -51,6 +52,15 @@ def main(
     ),
 ) -> None:
     """Docto Trace — Storage auditing CLI."""
+    # Print the DOCTO banner at the start of every command
+    banner = pyfiglet.figlet_format("DOCTO", font="slant")
+    rprint(f"[bold cyan]{banner}[/bold cyan]")
+
+    # Branding and Vision Section
+    rprint("[bold white]Apache-2.0 Open Source[/bold white] • [bold blue][link=https://docto.com.co/]docto.com.co[/link][/bold blue] • [bold magenta][link=https://github.com/Docto-Studio]GitHub[/link][/bold magenta]")
+    rprint("[italic dim]“Building the ecosystem to turn any company’s chaos of files and data from any source[/italic dim]")
+    rprint("[italic dim]into a centralized, organized memory ready to be used by humans and AI agents.”[/italic dim]\n")
+
     if version:
         rprint(f"[bold cyan]docto-trace-storage[/bold cyan] v[green]{__version__}[/green]")
         raise typer.Exit()
