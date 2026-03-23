@@ -278,17 +278,80 @@ async def _run_autonomous_agent(
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "qualitative_review": {
+                        "executive_summary": {
                             "type": "string",
-                            "description": "A cohesive 2-paragraph review of the digital chaos and AI readiness based on your findings."
+                            "description": "A high-level executive summary of the digital state and AI readiness."
                         },
-                        "tactical_plan": {
+                        "semantic_clarity_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Score from 1-10 on how clear and descriptive the file naming and structure are."
+                        },
+                        "retrieval_confidence_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Score from 1-10 on how easy it would be for an AI to retrieve specific information."
+                        },
+                        "automation_potential_score": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Score from 1-10 on how ready the data is for automated processing/RAG."
+                        },
+                        "ai_assessment_summary": {
+                            "type": "string",
+                            "description": "A single sentence summarizing the overall AI readiness."
+                        },
+                        "efficiency_strengths": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Exactly 3 actionable bullet points to improve organization."
+                            "description": "List of structural and organizational strengths found."
+                        },
+                        "critical_weaknesses": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of critical organizational weaknesses found."
+                        },
+                        "action_plan": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": ["CRITICAL", "HIGH", "MEDIUM"]
+                                    },
+                                    "action_item": {
+                                        "type": "string",
+                                        "description": "The specific task name or action."
+                                    },
+                                    "target_outcome": {
+                                        "type": "string",
+                                        "description": "The goal or result of the action."
+                                    }
+                                },
+                                "required": ["priority", "action_item", "target_outcome"]
+                            },
+                            "description": "A prioritized list of action items."
+                        },
+                        "recommendations": {
+                            "type": "string",
+                            "description": "Final strategic recommendations."
                         }
                     },
-                    "required": ["qualitative_review", "tactical_plan"]
+                    "required": [
+                        "executive_summary", 
+                        "semantic_clarity_score", 
+                        "retrieval_confidence_score", 
+                        "automation_potential_score",
+                        "ai_assessment_summary",
+                        "efficiency_strengths",
+                        "critical_weaknesses",
+                        "action_plan",
+                        "recommendations"
+                    ]
                 }
             }
         }
@@ -298,7 +361,21 @@ async def _run_autonomous_agent(
     
     import typing
     messages: list[dict[str, typing.Any]] = [
-        {"role": "system", "content": f"You are an Autonomous AI Data Archivist analyzing a Google Drive. Use your tools iteratively to explore folders and files. Record checkpoints of findings. Once thoroughly explored (max {max_iterations} turns), finalize the report."},
+        {
+            "role": "system", 
+            "content": (
+                "You are an Autonomous AI Data Archivist analyzing a Google Drive to evaluate its organizational health and AI Readiness.\n\n"
+                "Your goal is to explore the drive, identify structural patterns, naming conventions, and data silos to produce a comprehensive report.\n\n"
+                f"Use your tools iteratively to explore folders and files. Record checkpoints of findings. Once thoroughly explored (max {max_iterations} turns), finalize the report.\n\n"
+                "When calling `finalize_report`, ensure you provide:\n"
+                "- Executive Summary: High-level overview.\n"
+                "- Readiness Assessment Scores (1-10) for Semantic Clarity (naming quality), Retrieval Confidence (findability), and Automation Potential (RAG readiness).\n"
+                "- AI Assessment Summary: A punchy one-sentence summary.\n"
+                "- Structural Diagnostics: Bullet points for Efficiency Strengths and Critical Weaknesses.\n"
+                "- Action Plan (Prioritized): At least 3 prioritized action items (CRITICAL, HIGH, MEDIUM) with specific tasks and target outcomes.\n"
+                "- Recommendations: Strategic long-term advice."
+            )
+        },
         {"role": "user", "content": f"Global Setup Metrics:\n- Structured: {structured_count}\n- Unstructured: {unstructured_count}\n- Naming Entropy: {avg_entropy:.1f}/100.0\n\nTop-level Map:\n{top_tree_map}\n\nBegin your exploration."}
     ]
 
@@ -370,10 +447,58 @@ async def _run_autonomous_agent(
 
                 elif func_name == "finalize_report":
                     err_console.print(f"[bold green]✅ Agent successfully finalized report.[/bold green]")
-                    review = args.get("qualitative_review", "Analysis completed.")
-                    plan = args.get("tactical_plan", [])
-                    plan_str = "\n".join(f"- {p}" for p in plan)
-                    return f"{review}\n\n{plan_str}"
+                    
+                    # Score-to-Risk conversion
+                    def _risk_level(score):
+                        if score >= 8: return "LOW"
+                        if score >= 4: return "MED"
+                        return "HIGH"
+
+                    exec_sum = args.get("executive_summary", "")
+                    s_score = args.get("semantic_clarity_score", 1)
+                    r_score = args.get("retrieval_confidence_score", 1)
+                    a_score = args.get("automation_potential_score", 1)
+                    assessment = args.get("ai_assessment_summary", "")
+                    
+                    strengths = args.get("efficiency_strengths", [])
+                    weaknesses = args.get("critical_weaknesses", [])
+                    actions = args.get("action_plan", [])
+                    recs = args.get("recommendations", "")
+
+                    # Build Markdown report
+                    md = f"**Executive Summary:** {exec_sum}\n\n"
+                    md += "## Readiness Assessment\n"
+                    md += "*Evaluation of data legibility for LLMs and RAG systems.*\n\n"
+                    md += "| Metric | Score | Risk Level |\n"
+                    md += "| :--- | :--- | :--- |\n"
+                    md += f"| **Semantic Clarity** | {s_score}/10 | {_risk_level(s_score)} |\n"
+                    md += f"| **Retrieval Confidence** | {r_score}/10 | {_risk_level(r_score)} |\n"
+                    md += f"| **Automation Potential** | {a_score}/10 | {_risk_level(a_score)} |\n\n"
+                    md += f"**Assessment:** {assessment}\n\n"
+                    
+                    md += "## Structural Diagnostics\n\n"
+                    md += "### ✅ Efficiency Strengths\n"
+                    for s in strengths:
+                        md += f"- {s}\n"
+                    md += "\n### ❌ Critical Weaknesses\n"
+                    for w in weaknesses:
+                        md += f"- {w}\n"
+                    md += "\n"
+                    
+                    md += "## Action Plan (Prioritized)\n\n"
+                    md += "| Priority | Action Item | Target Outcome |\n"
+                    md += "| :--- | :--- | :--- |\n"
+                    for action in actions:
+                        p = action.get("priority", "MEDIUM")
+                        ai = action.get("action_item", "")
+                        to = action.get("target_outcome", "")
+                        md += f"| **{p}** | {ai} | {to} |\n"
+                    md += "\n"
+                    
+                    md += "## Recommendations\n"
+                    md += f"{recs}"
+                    
+                    return md
 
                 # Append tool result
                 messages.append({

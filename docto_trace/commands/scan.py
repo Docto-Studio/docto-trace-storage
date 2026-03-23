@@ -365,8 +365,9 @@ def _print_summary(report: HealthReport, report_path: Path) -> None:
         
         if ar.ai_analysis_report:
             console.print("\n  [bold cyan]LLM Analysis & Action Plan:[/bold cyan]")
+            from rich.markdown import Markdown
             from rich.panel import Panel
-            console.print(Panel(ar.ai_analysis_report, border_style="cyan", padding=(1, 2)))
+            console.print(Panel(Markdown(ar.ai_analysis_report), border_style="cyan", padding=(1, 2)))
         console.print()
 
     console.rule("[bold green]✅ Report saved[/bold green]")

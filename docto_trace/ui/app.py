@@ -128,7 +128,7 @@ def apply_custom_css():
             .table-container {
                 max-height: 400px;
                 overflow-y: auto;
-                border: 1px solid #374151;
+                border: 1px solid #4B5563;
                 border-radius: 8px;
                 background-color: #1F2937;
             }
@@ -140,29 +140,28 @@ def apply_custom_css():
             .file-table th {
                 position: sticky;
                 top: 0;
-                background-color: #1F2937;
+                background-color: #374151;
                 z-index: 10;
                 text-align: left;
                 padding: 1rem;
-                color: #D1D5DB;
-                font-weight: 500;
+                color: #F9FAFB;
+                font-weight: 600;
                 font-size: 0.85rem;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
-                border-bottom: 2px solid #374151;
+                border-bottom: 2px solid #4B5563;
             }
             .file-row {
                 background-color: transparent;
                 border-bottom: 1px solid #374151;
-                transition: background-color 0.2s, border-radius 0.2s;
+                transition: background-color 0.2s;
             }
             .file-row:hover {
                 background-color: #374151;
-                border-radius: 8px;
             }
             .file-row td {
                 padding: 1rem;
-                color: #F9FAFB;
+                color: #F3F4F6;
                 font-size: 0.95rem;
                 vertical-align: middle;
             }
@@ -277,11 +276,58 @@ def apply_custom_css():
             [data-testid="stMarkdownContainer"] li {
                 color: #F9FAFB !important;
                 line-height: 1.6;
-                font-size: 0.95rem;
+                font-size: 1.1rem;
+            }
+            [data-testid="stMarkdownContainer"] blockquote {
+                border-left: 4px solid #4F46E5;
+                padding-left: 1rem;
+                margin-left: 0;
+                color: #D1D5DB;
+                font-style: italic;
             }
             [data-testid="stMarkdownContainer"] strong {
                 color: #FFFFFF !important;
                 font-weight: 700;
+            }
+            /* Make Markdown headings smaller in reports */
+            [data-testid="stMarkdownContainer"] h2 {
+                font-size: 1.3rem !important;
+                margin-top: 1.5rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            [data-testid="stMarkdownContainer"] h3 {
+                font-size: 1.15rem !important;
+                margin-top: 1.25rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            [data-testid="stMarkdownContainer"] h4 {
+                font-size: 1.1rem !important;
+                margin-top: 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            /* Styling for Markdown-rendered tables (like the AI report) */
+            [data-testid="stMarkdownContainer"] table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1rem 0;
+                border: 1px solid #4B5563;
+                background-color: #1F2937;
+                color: #F9FAFB;
+            }
+            [data-testid="stMarkdownContainer"] th {
+                background-color: #374151 !important;
+                color: #F9FAFB !important;
+                padding: 0.75rem;
+                text-align: left;
+                border: 1px solid #4B5563 !important;
+            }
+            [data-testid="stMarkdownContainer"] td {
+                padding: 0.75rem;
+                border: 1px solid #4B5563 !important;
+                color: #F3F4F6 !important;
+            }
+            [data-testid="stMarkdownContainer"] tr:nth-child(even) {
+                background-color: #111827;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -366,6 +412,25 @@ def render_overview(data: dict):
             unsafe_allow_html=True
         )
     
+    # Extract Executive Summary if it exists in the AI report
+    ai_readiness = data.get("ai_readiness", {})
+    report_text = ""
+    exec_summary = ""
+    
+    if isinstance(ai_readiness, dict) and ai_readiness.get("ai_analysis_report"):
+        report_text = ai_readiness["ai_analysis_report"]
+        # Look for "Executive Summary:" at the start
+        if "**Executive Summary:**" in report_text:
+            # Match the new title '## Readiness Assessment'
+            parts = report_text.split("## Readiness Assessment", 1)
+            if len(parts) > 1:
+                exec_summary = parts[0].replace("**Executive Summary:**", "").strip()
+                report_text = "## Readiness Assessment" + parts[1]
+    
+    if exec_summary:
+        st.markdown(f"> {exec_summary}")
+        st.markdown("<br>", unsafe_allow_html=True)
+
     # Storage Horizontal Bar
     quota = data.get("quota")
     tree = data.get("storage_tree", {})
@@ -424,18 +489,14 @@ def render_overview(data: dict):
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Autonomous AI Report (Only if executed)
-    ai_readiness = data.get("ai_readiness", {})
-    if isinstance(ai_readiness, dict) and ai_readiness.get("ai_analysis_report"):
-        st.markdown("### 🤖 Autonomous AI Readiness Analysis")
-        
+    if report_text:
         # Display entropy score if available
         entropy = ai_readiness.get("naming_entropy_score")
         if entropy is not None:
             score_color = "#34D399" if entropy > 70 else "#FBBF24" if entropy > 40 else "#EF4444"
             st.markdown(f"**Naming Entropy Score**: <span style='color:{score_color}; font-weight:bold;'>{entropy}/100.0</span>", unsafe_allow_html=True)
             
-        st.info("The Docto AI Exploration Agent navigated your cloud storage and generated the following action plan:")
-        st.markdown(ai_readiness["ai_analysis_report"])
+        st.markdown(report_text)
         st.markdown("<br><br>", unsafe_allow_html=True)
 
     # Top Folders Cards
