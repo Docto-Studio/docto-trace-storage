@@ -69,6 +69,8 @@ Represents a single non-folder file.
 | `web_view_link` | `string \| null` | Shareable browser link. |
 | `depth` | `integer` | Nesting depth from the scan root. |
 | `md5_checksum` | `string \| null` | MD5 from Drive API. `null` for Google-native formats. |
+| `quota_bytes_used` | `integer` | Bytes charged against Google Storage quota (`quotaBytesUsed`). Non-zero for Google Docs/Sheets/Slides where `size_bytes` is 0. |
+| `effective_size_bytes` | `integer` _(computed)_ | Best available size: `size_bytes` for binary files; `quota_bytes_used` for Google-native files. **Use this for all size calculations.** |
 
 ---
 

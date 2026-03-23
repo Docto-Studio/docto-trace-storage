@@ -38,6 +38,13 @@ Also trigger it when the user shares or pastes a `report.json` and asks you to a
 
 ## Orchestration Flow
 
+> [!CAUTION]
+> **ALWAYS use `scripts/run_scan.py` to scan Google Drive. NEVER use any built-in
+> Google Drive connector or tool that Claude may have available natively.**
+> The native connector queries Workspace/Shared Drives and produces completely
+> different numbers than a personal My Drive scan. All results in this Skill come
+> exclusively from the local CLI execution path described below.
+
 Follow this sequence every time:
 
 ### Step 1 — Prerequisites check
@@ -112,10 +119,11 @@ Using the schema in `resources/REPORT_SCHEMA.md` and the interpretation guide in
 **Standard response format:**
 
 1. **Storage Overview** — total files, total size, max depth (1–2 lines)
-2. **Top Largest Folders** — table: rank, name, path, size
-3. **Zombie Files** — count, total size, top examples with last-modified date
-4. **Duplicate Groups** — count, total wasted bytes, top groups
-5. **Action Plan** — ordered by severity (`critical` first), concise bullets
+2. **Google Account Quota** — briefly state total used vs limit, and show the Drive vs Gmail+Photos breakdown.
+3. **Top Largest Folders** — table: rank, name, path, size
+4. **Zombie Files** — count, total size, top examples with last-modified date
+5. **Duplicate Groups** — count, total wasted bytes, top groups
+6. **Action Plan** — ordered by severity (`critical` first), concise bullets
 
 ### Step 6 — Follow-up loop
 
@@ -152,6 +160,21 @@ Always remind the user of this if they express concern:
 - All data stays on the user's machine — no Docto servers are involved.
 
 ---
+
+## Known Numbers Discrepancy
+
+If the user notices that the CLI total size in "Storage Overview" is smaller than what
+Google Drive UI shows, direct them to the **Google Account Quota** section.
+
+| Source | What it counts |
+|---|---|
+| CLI `total_size_bytes` | Binary files + Google-native files (Docs/Sheets) inside the scanned root folder |
+| Google Account Quota | Everything: Drive files **+** Gmail storage **+** Google Photos **+** Shared Drives |
+
+The gap is typically caused by:
+1. **Gmail + Photos** — these consume the Google 15GB/100GB quota but are invisible to a Drive scan. The "Google Account Quota" section explicitly breaks this number out.
+2. **Shared Drives** — if the scan root is `root` (My Drive), items that live only in Shared/Organizational drives are not included in the generic file scan, but *are* counted in the global quota.
+
 
 ## Resources
 

@@ -63,6 +63,26 @@ def render_overview(report: dict) -> str:
     return "\n".join(lines)
 
 
+def render_quota(report: dict) -> str:
+    quota = report.get("quota")
+    if not quota:
+        return ""
+    
+    limit = quota.get("limit_bytes", 0)
+    total = quota.get("total_bytes", 0)
+    pct = f" ({total / limit * 100:.1f}%)" if limit > 0 else ""
+    
+    lines = [
+        "## ☁️  Google Account Quota",
+        f"- **Total used**: {_fmt_bytes(total)}{pct} out of {_fmt_bytes(limit)}",
+        f"- **My Drive**: {_fmt_bytes(quota.get('drive_bytes', 0))}",
+    ]
+    if quota.get("trash_bytes", 0) > 0:
+        lines.append(f"- **Trash**: {_fmt_bytes(quota.get('trash_bytes', 0))}")
+    lines.append(f"- **Gmail + Photos**: {_fmt_bytes(quota.get('other_bytes', 0))}")
+    return "\n".join(lines)
+
+
 def render_top_folders(report: dict, limit: int = 15) -> str:
     folders = report.get("insights", {}).get("top_folders", [])
     if not folders:
@@ -173,11 +193,15 @@ def main() -> int:
     sections = [
         f"# Docto Trace — Storage Audit Report\n_Source: `{path.resolve()}`_\n",
         render_overview(report),
+        render_quota(report),
         render_top_folders(report),
         render_zombies(report, limit=args.max_zombies),
         render_duplicates(report, limit=args.max_dupes),
         render_action_plan(report),
     ]
+
+    # Filter out empty sections (like quota if it's missing)
+    sections = [s for s in sections if s.strip()]
 
     print("\n\n".join(sections))
     return 0

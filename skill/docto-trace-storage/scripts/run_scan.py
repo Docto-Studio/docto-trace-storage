@@ -20,10 +20,59 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import importlib
 import subprocess
 import sys
 from pathlib import Path
 
+
+# ---------------------------------------------------------------------------
+# Pre-flight: ensure docto-trace-storage is installed
+# ---------------------------------------------------------------------------
+
+def _ensure_installed() -> bool:
+    """
+    Try to import the package. If missing, install it via pip and retry.
+    Returns True if the package is available after the check.
+    """
+    try:
+        importlib.import_module("docto_trace")
+        return True
+    except ModuleNotFoundError:
+        pass
+
+    print("[docto-trace-skill] docto-trace-storage not found — installing via pip…", flush=True)
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", "docto-trace-storage>=0.2.0"],
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        print(
+            "\n[ERROR] pip install failed. Please install manually:\n"
+            "  pip install docto-trace-storage\n",
+            file=sys.stderr,
+        )
+        return False
+
+    # Invalidate import caches so the freshly installed package is discoverable.
+    importlib.invalidate_caches()
+    try:
+        importlib.import_module("docto_trace")
+        print("[docto-trace-skill] Installation successful.", flush=True)
+        return True
+    except ModuleNotFoundError:
+        print(
+            "\n[ERROR] Package installed but module still not importable. "
+            "Check your Python environment.\n",
+            file=sys.stderr,
+        )
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -50,13 +99,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def build_cmd(args: argparse.Namespace) -> list[str]:
-    """Translate parsed args into the docto-trace scan subprocess command."""
-    cmd: list[str] = [
-        sys.executable, "-m", "docto_trace.cli",
-        # Alternatively: just ["docto-trace", "scan"] if the CLI is on PATH
-    ]
-    # Use the entrypoint directly for reliability inside skill environments
-    cmd = ["docto-trace", "scan"]
+    """
+    Build the subprocess command using `sys.executable -m docto_trace.cli scan`.
+
+    Using the module invocation (instead of the `docto-trace` entrypoint) ensures
+    the command works in any environment — including Skill sandboxes where the
+    entrypoint script may not be on PATH.
+    """
+    cmd: list[str] = [sys.executable, "-m", "docto_trace.cli", "scan"]
 
     cmd += ["--root-id", args.root_id]
     cmd += ["--top", str(args.top)]
@@ -74,27 +124,23 @@ def build_cmd(args: argparse.Namespace) -> list[str]:
     return cmd
 
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    cmd = build_cmd(args)
+    # Step 1 — ensure the package is available (auto-installs if missing).
+    if not _ensure_installed():
+        return 1
 
+    # Step 2 — build and run the scan command.
+    cmd = build_cmd(args)
     print(f"[docto-trace-skill] Running: {' '.join(cmd)}", flush=True)
 
-    try:
-        result = subprocess.run(
-            cmd,
-            text=True,
-            check=False,  # We handle exit codes ourselves for better messaging.
-        )
-    except FileNotFoundError:
-        print(
-            "\n[ERROR] `docto-trace` command not found.\n"
-            "Install it with:  pip install docto-trace-storage\n",
-            file=sys.stderr,
-        )
-        return 1
+    result = subprocess.run(cmd, text=True, check=False)
 
     if result.returncode != 0:
         print(
@@ -107,7 +153,7 @@ def main() -> int:
         )
         return result.returncode
 
-    # Resolve and print the report path so Claude can capture it.
+    # Step 3 — resolve and print the report path for Claude to capture.
     report_path = Path(args.output) / "report.json"
     print(f"\n[docto-trace-skill] Report generated at: {report_path.resolve()}")
     return 0
