@@ -72,14 +72,6 @@ include = [
   "docto_trace/data/docto_client.json",
 ]
 
-[tool.hatch.build.targets.wheel.shared-data]
-# Intentionally empty — data files are included via the package itself.
-
-[tool.hatch.build.force-include]
-# Bundle the Docto OAuth2 credentials so zero-install users don't need
-# to set up a Google Cloud project. Technical users can override with
-# `--credentials` or `docto-trace setup`.
-"docto_trace/data/credentials.json" = "docto_trace/data/credentials.json"
 
 [tool.ruff]
 line-length = 100

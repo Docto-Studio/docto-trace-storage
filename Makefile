@@ -1,32 +1,46 @@
-.PHONY: install lint test run clean
+.PHONY: install venv lint fix typecheck test run clean build
 
-# Install the package in editable mode with dev extras
-install:
-	pip install -e ".[dev]"
+VENV     := .venv
+PYTHON   := $(VENV)/bin/python
+PIP      := $(VENV)/bin/pip
+BIN      := $(VENV)/bin
+
+# Create the virtual environment
+venv:
+	python -m venv $(VENV)
+	$(PIP) install --upgrade pip -q
+
+# Install the package in editable mode with dev extras (inside venv)
+install: venv
+	$(PIP) install -e ".[dev]" -q
 
 # Lint and format with ruff
 lint:
-	ruff check docto_trace tests
-	ruff format --check docto_trace tests
+	$(BIN)/ruff check docto_trace tests
+	$(BIN)/ruff format --check docto_trace tests
 
 # Fix linting issues automatically
 fix:
-	ruff check --fix docto_trace tests
-	ruff format docto_trace tests
+	$(BIN)/ruff check --fix docto_trace tests
+	$(BIN)/ruff format docto_trace tests
 
 # Type-check
 typecheck:
-	mypy docto_trace
+	$(BIN)/mypy docto_trace
 
-# Run tests
+# Run tests (offline — no credentials needed)
 test:
-	pytest tests/ -v
+	$(BIN)/pytest tests/ -v
 
 # Quick smoke test — run the CLI
 run:
-	docto-trace --help
+	$(BIN)/docto-trace --help
 
-# Remove build artifacts
+# Build wheel and sdist
+build:
+	$(BIN)/python -m build
+
+# Remove all build and cache artifacts
 clean:
 	rm -rf dist/ build/ *.egg-info .mypy_cache .ruff_cache .pytest_cache
 	find . -type d -name __pycache__ -exec rm -rf {} +
