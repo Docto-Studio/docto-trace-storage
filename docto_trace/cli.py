@@ -15,6 +15,7 @@ from docto_trace.commands import logout as logout_cmd
 from docto_trace.commands import report as report_cmd
 from docto_trace.commands import scan as scan_cmd
 from docto_trace.commands import setup as setup_cmd
+from docto_trace.commands import ui as ui_cmd
 
 app = typer.Typer(
     name="docto-trace",
@@ -35,6 +36,7 @@ app.command(name="login")(login_cmd.login)
 app.command(name="logout")(logout_cmd.logout)
 app.command(name="scan")(scan_cmd.scan)
 app.command(name="report")(report_cmd.report)
+app.command(name="ui")(ui_cmd.ui)
 
 
 @app.callback()

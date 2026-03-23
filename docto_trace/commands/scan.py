@@ -76,6 +76,11 @@ def scan(
         "-S",
         help="Months without modification before a file is flagged as a zombie.",
     ),
+    open_ui: bool = typer.Option(
+        True,
+        "--ui/--no-ui",
+        help="Automatically launch the Streamlit UI after scanning.",
+    ),
 ) -> None:
     """
     Scan Google Drive and generate a structural health report.
@@ -160,6 +165,11 @@ def scan(
 
         # 8. Print summary to terminal
         _print_summary(report, report_path)
+
+        if open_ui:
+            console.print("\n[bold green]🚀 Transitioning to interactive UI...[/bold green]")
+            from docto_trace.commands.ui import ui as launch_ui
+            launch_ui(report_json=report_path)
 
     except FileNotFoundError as exc:
         err_console.print(f"\n[bold red]❌ Error:[/bold red] {exc}")

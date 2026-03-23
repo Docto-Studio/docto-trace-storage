@@ -49,6 +49,11 @@ dev = [
   "twine>=5.0.0",
   "build>=1.2.0",
 ]
+ui = [
+  "streamlit>=1.30.0",
+  "plotly>=5.18.0",
+  "pandas>=2.0.0",
+]
 
 [project.scripts]
 docto-trace = "docto_trace.cli:app"
