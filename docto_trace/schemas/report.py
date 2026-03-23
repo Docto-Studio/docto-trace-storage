@@ -110,6 +110,41 @@ class ActionItem(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Quota summary (from Drive about.get)
+# ---------------------------------------------------------------------------
+
+
+class QuotaSummary(BaseModel):
+    """
+    Google account storage quota as reported by Drive about.get().
+
+    Covers ALL Google storage: Drive + Gmail + Google Photos.
+    This matches the numbers shown in the Google Drive UI.
+    """
+
+    total_bytes: int = Field(
+        default=0,
+        description="Total bytes used across Drive + Gmail + Photos (usage).",
+    )
+    drive_bytes: int = Field(
+        default=0,
+        description="Bytes used by Drive files only (usageInDrive).",
+    )
+    trash_bytes: int = Field(
+        default=0,
+        description="Bytes used by Drive trash (usageInDriveTrash).",
+    )
+    other_bytes: int = Field(
+        default=0,
+        description="Bytes used by Gmail + Photos = total_bytes - drive_bytes.",
+    )
+    limit_bytes: int = Field(
+        default=0,
+        description="Total storage limit (0 = unlimited / could not be determined).",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Top-level Report
 # ---------------------------------------------------------------------------
 
@@ -127,6 +162,12 @@ class HealthReport(BaseModel):
 
     # Core scan result
     storage_tree: StorageTree
+
+    # Google account quota (from about.get — includes Gmail + Photos)
+    quota: QuotaSummary | None = Field(
+        default=None,
+        description="Full Google account storage quota. None if the call failed.",
+    )
 
     # Phase 1 insights
     insights: InsightSummary

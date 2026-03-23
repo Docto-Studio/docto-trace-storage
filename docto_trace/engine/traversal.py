@@ -58,6 +58,7 @@ def _item_to_file_node(item: dict, depth: int) -> FileNode:
         name=item.get("name", "Untitled"),
         mime_type=item.get("mimeType", "application/octet-stream"),
         size_bytes=int(item.get("size", 0)),
+        quota_bytes_used=int(item.get("quotaBytesUsed", 0)),
         created_at=_parse_dt(item.get("createdTime")),
         modified_at=_parse_dt(item.get("modifiedTime")),
         owners=owners,

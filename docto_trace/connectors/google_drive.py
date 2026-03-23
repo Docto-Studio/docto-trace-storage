@@ -20,7 +20,7 @@ console = Console(stderr=True)
 # Fields to request from the Drive API — only what we need to minimize payload.
 _FIELDS = (
     "nextPageToken, "
-    "files(id, name, mimeType, size, createdTime, modifiedTime, "
+    "files(id, name, mimeType, size, quotaBytesUsed, createdTime, modifiedTime, "
     "parents, owners(emailAddress), webViewLink, trashed, md5Checksum)"
 )
 
@@ -122,6 +122,30 @@ class GoogleDriveConnector(AbstractConnector):
             .execute(http=http),
         )
         return meta.get("name", folder_id)
+
+    async def get_quota(self) -> dict:
+        """
+        Fetch the Google account storage quota via Drive about.get().
+
+        Returns a dict with keys: usage, usageInDrive, usageInDriveTrash, limit.
+        All values are integers (bytes); limit is 0 if the account has unlimited quota.
+        Requires only the drive.readonly scope (already granted).
+        """
+        loop = asyncio.get_event_loop()
+        http = _get_thread_local_http(self._creds) if self._creds is not None else None
+        about = await loop.run_in_executor(
+            None,
+            lambda: self._service.about()
+            .get(fields="storageQuota")
+            .execute(http=http),
+        )
+        quota = about.get("storageQuota", {})
+        return {
+            "usage":             int(quota.get("usage", 0)),
+            "usageInDrive":      int(quota.get("usageInDrive", 0)),
+            "usageInDriveTrash": int(quota.get("usageInDriveTrash", 0)),
+            "limit":             int(quota.get("limit", 0)),
+        }
 
     # ------------------------------------------------------------------
     # Private helpers

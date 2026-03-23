@@ -42,6 +42,26 @@ class FileNode(BaseModel):
             "Available for binary files only; None for Google-native formats."
         ),
     )
+    quota_bytes_used: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Bytes charged against the user's Google Storage quota (quotaBytesUsed). "
+            "Non-zero for Google-native files (Docs, Sheets, Slides) where size_bytes "
+            "is 0. Use effective_size_bytes for all size calculations."
+        ),
+    )
+
+    @property
+    def effective_size_bytes(self) -> int:
+        """
+        The best available size estimate for this file.
+
+        - For binary files (PDFs, images, Office docs): ``size_bytes`` (exact).
+        - For Google-native files (Docs, Sheets, Slides): ``quota_bytes_used``
+          (the actual quota charged by Google, since ``size_bytes`` is always 0).
+        """
+        return self.size_bytes if self.size_bytes > 0 else self.quota_bytes_used
 
 
 class FolderNode(BaseModel):
@@ -73,7 +93,7 @@ class FolderNode(BaseModel):
         """Append a child and accumulate size/count stats."""
         self.children.append(child)
         if isinstance(child, FileNode):
-            self.total_size_bytes += child.size_bytes
+            self.total_size_bytes += child.effective_size_bytes
             self.total_file_count += 1
         else:
             self.total_size_bytes += child.total_size_bytes

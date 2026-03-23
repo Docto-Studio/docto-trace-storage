@@ -22,7 +22,7 @@ from docto_trace.connectors.google_drive import GoogleDriveConnector
 from docto_trace.engine.analytics import build_insight_summary
 from docto_trace.engine.auditor import build_audit_summary
 from docto_trace.engine.traversal import build_storage_tree
-from docto_trace.schemas.report import HealthReport
+from docto_trace.schemas.report import HealthReport, QuotaSummary
 
 console = Console()
 err_console = Console(stderr=True)
@@ -122,9 +122,29 @@ def scan(
             stale_threshold_months=stale_threshold,
         )
 
-        # 6. Build HealthReport
+        # 6. Fetch account-wide quota (Drive + Gmail + Photos)
+        err_console.print("[bold]📦 Fetching account quota…[/bold]")
+        quota: QuotaSummary | None = None
+        try:
+            raw_quota = asyncio.run(connector.get_quota())
+            drive_b  = raw_quota["usageInDrive"]
+            total_b  = raw_quota["usage"]
+            trash_b  = raw_quota["usageInDriveTrash"]
+            limit_b  = raw_quota["limit"]
+            quota = QuotaSummary(
+                total_bytes=total_b,
+                drive_bytes=drive_b,
+                trash_bytes=trash_b,
+                other_bytes=max(0, total_b - drive_b),
+                limit_bytes=limit_b,
+            )
+        except Exception as exc:  # noqa: BLE001
+            err_console.print(f"[yellow]⚠️  Could not fetch account quota: {exc}[/yellow]")
+
+        # 7. Build HealthReport
         report = HealthReport(
             storage_tree=storage_tree,
+            quota=quota,
             insights=insights,
             zombies=zombies,
             duplicates=duplicates,
@@ -167,6 +187,28 @@ def _print_summary(report: HealthReport, report_path: Path) -> None:
     console.print(f"  [bold]Total size:[/bold]    {_fmt_bytes(tree.total_size_bytes)}")
     console.print(f"  [bold]Max depth:[/bold]     {tree.max_depth_reached}")
     console.print(f"  [bold]Scanned at:[/bold]    {tree.scanned_at.isoformat()}")
+
+    # Show account-wide quota if available
+    if report.quota is not None:
+        q = report.quota
+        console.print()
+        console.rule("[bold cyan]☁️  Google Account Quota[/bold cyan]")
+        used_pct = (
+            f" ({q.total_bytes / q.limit_bytes * 100:.1f}% of {_fmt_bytes(q.limit_bytes)})"
+            if q.limit_bytes > 0
+            else ""
+        )
+        console.print(f"  [bold]Total used:[/bold]    {_fmt_bytes(q.total_bytes)}{used_pct}")
+        console.print(f"  [bold]My Drive:[/bold]      {_fmt_bytes(q.drive_bytes)}")
+        if q.trash_bytes > 0:
+            console.print(f"  [bold]Trash:[/bold]         {_fmt_bytes(q.trash_bytes)}")
+        console.print(f"  [bold]Gmail + Photos:[/bold] {_fmt_bytes(q.other_bytes)}")
+        gap = q.drive_bytes - tree.total_size_bytes
+        if gap > 0:
+            console.print(
+                f"  [dim]↳ {_fmt_bytes(gap)} in Drive not captured by scan "
+                "(Google-native files, shortcuts, items outside scan root)[/dim]"
+            )
     console.print()
 
     # Top folders table
