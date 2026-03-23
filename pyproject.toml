@@ -38,6 +38,8 @@ dependencies = [
   "rich>=13.7.0",
   "anyio>=4.3.0",
   "python-dateutil>=2.9.0",   # Used by auditor.py (relativedelta for zombie detection)
+  "litellm>=1.0.0",           # Used for AI Readiness Score LLM analysis
+  "python-dotenv>=1.0.0",     # Loads .env variables into os.environ for LiteLLM
 ]
 
 [project.optional-dependencies]

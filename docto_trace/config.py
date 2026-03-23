@@ -2,8 +2,12 @@
 
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Ensure .env is loaded into os.environ globally (required by litellm for API keys)
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -57,6 +61,12 @@ class Settings(BaseSettings):
             "Files not modified within this many months are flagged as zombies. "
             "Override with DOCTO_TRACE_STALE_THRESHOLD_MONTHS."
         ),
+    )
+
+    # --- AI Readiness (Phase 4) ---
+    llm_model: str | None = Field(
+        default=None,
+        description="LiteLLM compatible model string for AI Readiness analysis.",
     )
 
     # --- Output ---

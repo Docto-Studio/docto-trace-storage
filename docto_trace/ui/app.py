@@ -114,14 +114,14 @@ def apply_custom_css():
                 text-overflow: ellipsis;
             }
             .folder-dots {
-                color: #9CA3AF;
+                color: #D1D5DB;
                 font-weight: bold;
                 letter-spacing: 2px;
                 cursor: pointer;
             }
             .folder-meta-text {
                 font-size: 0.8rem;
-                color: #9CA3AF;
+                color: #D1D5DB;
             }
             
             /* Custom CSS for File Tables */
@@ -144,7 +144,7 @@ def apply_custom_css():
                 z-index: 10;
                 text-align: left;
                 padding: 1rem;
-                color: #9CA3AF;
+                color: #D1D5DB;
                 font-weight: 500;
                 font-size: 0.85rem;
                 text-transform: uppercase;
@@ -247,7 +247,7 @@ def apply_custom_css():
             }
             .legend-meta {
                 font-size: 0.85rem;
-                color: #9CA3AF;
+                color: #D1D5DB;
                 padding-left: 1.5rem;
             }
             .storage-bar-container {
@@ -261,15 +261,27 @@ def apply_custom_css():
             }
 
             /* Typography */
-            h1, h2, h3, h4 {
+            h1, h2, h3, h4, h5, h6 {
                 color: #F9FAFB !important;
                 font-weight: 700 !important;
             }
             .subtitle {
-                color: #9CA3AF;
+                color: #D1D5DB;
                 font-size: 0.95rem;
                 margin-top: -10px;
                 margin-bottom: 2rem;
+            }
+
+            /* Better Markdown text contrast */
+            [data-testid="stMarkdownContainer"] p, 
+            [data-testid="stMarkdownContainer"] li {
+                color: #F9FAFB !important;
+                line-height: 1.6;
+                font-size: 0.95rem;
+            }
+            [data-testid="stMarkdownContainer"] strong {
+                color: #FFFFFF !important;
+                font-weight: 700;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -411,6 +423,21 @@ def render_overview(data: dict):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Autonomous AI Report (Only if executed)
+    ai_readiness = data.get("ai_readiness", {})
+    if isinstance(ai_readiness, dict) and ai_readiness.get("ai_analysis_report"):
+        st.markdown("### 🤖 Autonomous AI Readiness Analysis")
+        
+        # Display entropy score if available
+        entropy = ai_readiness.get("naming_entropy_score")
+        if entropy is not None:
+            score_color = "#34D399" if entropy > 70 else "#FBBF24" if entropy > 40 else "#EF4444"
+            st.markdown(f"**Naming Entropy Score**: <span style='color:{score_color}; font-weight:bold;'>{entropy}/100.0</span>", unsafe_allow_html=True)
+            
+        st.info("The Docto AI Exploration Agent navigated your cloud storage and generated the following action plan:")
+        st.markdown(ai_readiness["ai_analysis_report"])
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
     # Top Folders Cards
     st.markdown("### Top 10 Largest Folders")
     insights = data.get("insights", {})
@@ -452,7 +479,7 @@ def render_overview(data: dict):
 
     st.markdown("<br><br><hr style='border-top: 1px solid #374151; margin-bottom: 2rem;'>", unsafe_allow_html=True)
     footer_html = """
-    <div style="text-align: center; padding: 2rem 0; color: #9CA3AF; font-size: 0.95rem; max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; padding: 2rem 0; color: #D1D5DB; font-size: 0.95rem; max-width: 800px; margin: 0 auto;">
         <div style="font-size: 1.2rem; font-weight: 700; color: #F9FAFB; margin-bottom: 0.5rem;">Discover the Docto Ecosystem</div>
         <div style="margin-bottom: 1.5rem; line-height: 1.5;">
             Building the ecosystem to turn any company’s chaos of files and data from any source into a centralized, organized memory ready to be used by humans and AI agents.

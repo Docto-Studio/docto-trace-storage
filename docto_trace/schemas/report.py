@@ -110,6 +110,36 @@ class ActionItem(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Phase 4 stubs (AI Readiness)
+# ---------------------------------------------------------------------------
+
+
+class FileTypeCategory(str, Enum):
+    STRUCTURED = "structured"
+    UNSTRUCTURED = "unstructured"
+    UNKNOWN = "unknown"
+
+
+class AIReadinessScore(BaseModel):
+    """Evaluates the readiness of the storage for AI and Search indexing."""
+
+    structured_files_count: int = Field(default=0, ge=0)
+    unstructured_files_count: int = Field(default=0, ge=0)
+    structured_bytes: int = Field(default=0, ge=0)
+    unstructured_bytes: int = Field(default=0, ge=0)
+    naming_entropy_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=100.0,
+        description="Programmatic score (0-100) evaluating descriptiveness of file names.",
+    )
+    ai_analysis_report: str | None = Field(
+        default=None,
+        description="Qualitative generated report by an LLM, if enabled.",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Quota summary (from Drive about.get)
 # ---------------------------------------------------------------------------
 
@@ -176,3 +206,6 @@ class HealthReport(BaseModel):
     zombies: list[ZombieFile] = Field(default_factory=list)
     duplicates: list[DuplicateGroup] = Field(default_factory=list)
     action_plan: list[ActionItem] = Field(default_factory=list)
+
+    # Phase 4 fields
+    ai_readiness: AIReadinessScore | None = Field(default=None)

@@ -76,10 +76,20 @@ def scan(
         "-S",
         help="Months without modification before a file is flagged as a zombie.",
     ),
+    llm_model: Optional[str] = typer.Option(  # noqa: UP007
+        settings.llm_model,
+        "--llm-model",
+        help="LiteLLM compatible model string for AI Readiness qualitative report.",
+    ),
     open_ui: bool = typer.Option(
         True,
         "--ui/--no-ui",
         help="Automatically launch the Streamlit UI after scanning.",
+    ),
+    agent_iterations: int = typer.Option(
+        30,
+        "--agent-iterations",
+        help="Maximum loops the Autonomous Agent will perform before terminating.",
     ),
 ) -> None:
     """
@@ -127,6 +137,15 @@ def scan(
             stale_threshold_months=stale_threshold,
         )
 
+        # 5.5. Run Phase 4 AI Readiness
+        err_console.print("[bold]🤖 Calculating AI Readiness…[/bold]")
+        from docto_trace.engine.ai_readiness import build_ai_readiness_summary
+        ai_readiness = build_ai_readiness_summary(
+            tree=storage_tree,
+            llm_model=llm_model,
+            max_agent_iterations=agent_iterations,
+        )
+
         # 6. Fetch account-wide quota (Drive + Gmail + Photos)
         err_console.print("[bold]📦 Fetching account quota…[/bold]")
         quota: QuotaSummary | None = None
@@ -154,6 +173,7 @@ def scan(
             zombies=zombies,
             duplicates=duplicates,
             action_plan=action_plan,
+            ai_readiness=ai_readiness,
         )
 
         # 7. Write report.json
@@ -329,6 +349,25 @@ def _print_summary(report: HealthReport, report_path: Path) -> None:
         console.print()
     else:
         console.print("[green]✅ No duplicate files detected.[/green]\n")
+
+    # AI Readiness section
+    if report.ai_readiness:
+        ar = report.ai_readiness
+        console.rule("[bold cyan]🤖 AI Readiness Score[/bold cyan]")
+        console.print(f"  [bold]Naming Entropy:[/bold] {ar.naming_entropy_score}/100.0 (Higher is more descriptive)")
+        
+        total_f = ar.structured_files_count + ar.unstructured_files_count
+        if total_f > 0:
+            s_pct = (ar.structured_files_count / total_f) * 100
+            u_pct = (ar.unstructured_files_count / total_f) * 100
+            console.print(f"  [bold]Structured files:[/bold]   {ar.structured_files_count:,} ({s_pct:.1f}%) | {_fmt_bytes(ar.structured_bytes)}")
+            console.print(f"  [bold]Unstructured files:[/bold] {ar.unstructured_files_count:,} ({u_pct:.1f}%) | {_fmt_bytes(ar.unstructured_bytes)}")
+        
+        if ar.ai_analysis_report:
+            console.print("\n  [bold cyan]LLM Analysis & Action Plan:[/bold cyan]")
+            from rich.panel import Panel
+            console.print(Panel(ar.ai_analysis_report, border_style="cyan", padding=(1, 2)))
+        console.print()
 
     console.rule("[bold green]✅ Report saved[/bold green]")
     console.print(f"  [bold]Output:[/bold] {report_path.resolve()}")
