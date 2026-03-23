@@ -1,0 +1,3 @@
+# Skill dependency: the docto-trace-storage CLI itself.
+# Installing this package makes the `docto-trace` command available.
+docto-trace-storage>=0.2.0
