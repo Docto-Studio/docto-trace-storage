@@ -5,7 +5,7 @@ description: >
   scan their Drive, find zombie files, detect duplicates, analyse storage usage, get
   a cleanup plan, or asks anything related to Google Drive health. This skill runs the
   full audit itself — the user does NOT need to run any CLI command manually.
-dependencies: python>=3.10, docto-trace-storage>=0.2.0
+dependencies: python>=3.10, docto-trace-storage>=0.2.1
 ---
 
 ## Overview

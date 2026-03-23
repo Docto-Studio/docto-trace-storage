@@ -187,7 +187,7 @@ class HealthReport(BaseModel):
     (Form, Flux, Echo) can consume this without guessing.
     """
 
-    schema_version: str = Field(default="0.2.0")
+    schema_version: str = Field(default="0.2.1")
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Core scan result

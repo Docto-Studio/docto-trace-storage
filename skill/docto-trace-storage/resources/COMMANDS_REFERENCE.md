@@ -1,6 +1,6 @@
 # Docto Trace — CLI Commands Reference
 
-Full flag reference for the `docto-trace` CLI (v0.2.0).
+Full flag reference for the `docto-trace` CLI (v0.2.1).
 Use this when composing or explaining `run_scan.py` arguments, or when guiding users
 through the CLI manually.
 
@@ -9,7 +9,7 @@ through the CLI manually.
 ## `docto-trace --version` / `-v`
 
 ```bash
-docto-trace --version   # → docto-trace-storage v0.2.0
+docto-trace --version   # → docto-trace-storage v0.2.1
 docto-trace -v
 ```
 

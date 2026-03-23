@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python" />
-  <img src="https://img.shields.io/badge/version-0.2.0-green" />
+  <img src="https://img.shields.io/badge/version-0.2.1-green" />
   <img src="https://img.shields.io/badge/license-Apache_2.0-blue" />
   <img src="https://img.shields.io/badge/access-read--only-red" />
   <img src="https://img.shields.io/badge/data-stays_on_your_machine-brightgreen" />
@@ -133,7 +133,7 @@ pip install -e ".[dev]"
 
 ```bash
 python -m build --wheel
-# → dist/docto_trace_storage-0.2.0-py3-none-any.whl
+# → dist/docto_trace_storage-0.2.1-py3-none-any.whl
 ```
 
 **Requirements:** Python 3.10+
@@ -144,7 +144,7 @@ python -m build --wheel
 
 ```bash
 # Check version
-docto-trace --version      # → docto-trace-storage v0.2.0
+docto-trace --version      # → docto-trace-storage v0.2.1
 
 # Option A — Zero setup (uses bundled Docto credentials)
 docto-trace scan            # browser opens for OAuth2 consent on first run
@@ -171,7 +171,7 @@ docto-trace ui output/report.json
 ### `docto-trace --version` / `-v`
 
 ```bash
-docto-trace --version   # docto-trace-storage v0.2.0
+docto-trace --version   # docto-trace-storage v0.2.1
 docto-trace -v          # same
 ```
 
@@ -281,13 +281,13 @@ docto-trace scan --service-account ./sa-key.json
 
 ---
 
-## Report Schema (v0.2.0)
+## Report Schema (v0.2.1)
 
 The output `report.json` follows the `HealthReport` Pydantic schema:
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.2.1",
   "generated_at": "2026-03-23T10:00:00Z",
   "storage_tree": { "root_name": "My Drive", "total_files": 14832, "total_size_bytes": 51876044800 },
   "insights": {

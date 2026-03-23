@@ -43,7 +43,7 @@ def _ensure_installed() -> bool:
 
     print("[docto-trace-skill] docto-trace-storage not found — installing via pip…", flush=True)
     result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "docto-trace-storage>=0.2.0"],
+        [sys.executable, "-m", "pip", "install", "docto-trace-storage>=0.2.1"],
         text=True,
         check=False,
     )

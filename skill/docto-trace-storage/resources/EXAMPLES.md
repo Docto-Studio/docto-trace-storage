@@ -9,7 +9,7 @@ should interpret and respond to each section.
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.2.1",
   "generated_at": "2026-03-01T09:00:00Z",
   "storage_tree": {
     "root_name": "My Drive",
@@ -42,7 +42,7 @@ should interpret and respond to each section.
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.2.1",
   "storage_tree": {
     "root_name": "My Drive",
     "total_files": 6840,
@@ -101,7 +101,7 @@ should interpret and respond to each section.
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.2.1",
   "storage_tree": {
     "root_name": "My Drive",
     "total_files": 14832,

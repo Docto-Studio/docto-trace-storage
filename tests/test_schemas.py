@@ -169,7 +169,7 @@ class TestHealthReport:
 
     def test_construction(self):
         report = self._make_basic_report()
-        assert report.schema_version == "0.2.0"
+        assert report.schema_version == "0.2.1"
         assert len(report.zombies) == 0
         assert len(report.duplicates) == 0
         assert len(report.action_plan) == 0

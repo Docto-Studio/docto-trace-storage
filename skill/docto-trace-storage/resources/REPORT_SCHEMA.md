@@ -10,7 +10,7 @@ questions about specific fields.
 
 | Field | Type | Description |
 |---|---|---|
-| `schema_version` | `string` | Always `"0.2.0"` for this release. |
+| `schema_version` | `string` | Always `"0.2.1"` for this release. |
 | `generated_at` | `datetime (ISO 8601)` | When the report was produced. |
 | `storage_tree` | `StorageTree` | Complete snapshot of the scanned Drive. |
 | `insights` | `InsightSummary` | Structural analytics (top folders, deep nesting). |

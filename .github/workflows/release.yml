@@ -64,10 +64,10 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TESTPYPI_TOKEN }}
-        run: python -m twine upload --repository testpypi dist/*
+        run: python -m twine upload --repository testpypi --skip-existing dist/*
 
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: python -m twine upload dist/*
+        run: python -m twine upload --skip-existing dist/*
