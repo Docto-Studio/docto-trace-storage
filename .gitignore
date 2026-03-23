@@ -25,11 +25,13 @@ env/
 # --- Sensitive / Secrets ---
 credentials.json
 credentials*.json
+docto_client.json      # bundled credentials — injected by CI, never committed
 token.json
 token*.json
 service_account*.json
 *.p12
 *.pem
+.pypirc
 
 # --- Output artifacts ---
 output/

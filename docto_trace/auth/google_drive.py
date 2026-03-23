@@ -45,7 +45,7 @@ def _bundled_credentials_path() -> Path | None:
     partial source checkout that doesn't include the data directory).
     """
     try:
-        ref = importlib.resources.files("docto_trace.data").joinpath("credentials.json")
+        ref = importlib.resources.files("docto_trace.data").joinpath("docto_client.json")
         # importlib.resources may return a non-Path traversable; materialise it.
         with importlib.resources.as_file(ref) as p:  # type: ignore[arg-type]
             return p if p.exists() else None
