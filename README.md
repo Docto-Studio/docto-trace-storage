@@ -49,6 +49,44 @@
 
 ---
 
+## Claude Skill (AI-native interface)
+
+`docto-trace-storage` ships with a ready-to-use **Claude Skill** that lets you audit your Google Drive through natural language — no terminal required.
+
+```
+User → "Scan my Drive and find what's wasting space"
+Claude → runs docto-trace scan → analyses report.json → responds with insights
+```
+
+The Skill **actively invokes the CLI on your machine** via a thin subprocess wrapper.
+It follows the exact same read-only guarantee as the CLI itself.
+
+### Install the Skill
+
+```bash
+# 1. Package the skill
+cd skill/
+zip -r docto-trace-storage.zip docto-trace-storage/
+
+# 2. Upload to Claude → claude.ai/customize/skills
+```
+
+**Enterprise admins** can provision the Skill org-wide via `Admin → Customize → Skills`.
+See [`skill/README_SKILL.md`](./skill/README_SKILL.md) for the full deployment guide.
+
+### Example prompts
+
+| Prompt | What happens |
+|---|---|
+| "Scan my Google Drive" | Full audit, default settings |
+| "Find duplicate files in my Drive" | Scan + filter to duplicate groups |
+| "Which files haven't been touched in 3 years?" | Scan with `--stale-threshold 36` |
+| "Show me my 20 largest folders" | Scan with `--top 20` |
+
+> The CLI (`pip install docto-trace-storage`) works fully standalone — the Skill is an additive layer that delegates 100% to it.
+
+---
+
 ## Trust & Privacy
 
 **Are you handing your private Drive to a stranger's app?** No.
