@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docto-trace-storage"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deep storage auditing for Google Drive — part of the Docto Trace suite."
 readme = "README.md"
 license = { text = "MIT" }
@@ -55,6 +55,15 @@ Repository = "https://github.com/Docto-Studio/docto-trace-storage"
 
 [tool.hatch.build.targets.wheel]
 packages = ["docto_trace"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+# Intentionally empty — data files are included via the package itself.
+
+[tool.hatch.build.force-include]
+# Bundle the Docto OAuth2 credentials so zero-install users don't need
+# to set up a Google Cloud project. Technical users can override with
+# `--credentials` or `docto-trace setup`.
+"docto_trace/data/credentials.json" = "docto_trace/data/credentials.json"
 
 [tool.ruff]
 line-length = 100

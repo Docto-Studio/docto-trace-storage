@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.resources
 from pathlib import Path
 
 import httplib2
@@ -33,6 +34,23 @@ READONLY_SCOPES: list[str] = [
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/drive.metadata.readonly",
 ]
+
+
+def _bundled_credentials_path() -> Path | None:
+    """
+    Return the path to the Docto-provided credentials.json bundled inside the
+    package (``docto_trace/data/credentials.json``).
+
+    Returns None if the resource cannot be located (e.g. running from a
+    partial source checkout that doesn't include the data directory).
+    """
+    try:
+        ref = importlib.resources.files("docto_trace.data").joinpath("credentials.json")
+        # importlib.resources may return a non-Path traversable; materialise it.
+        with importlib.resources.as_file(ref) as p:  # type: ignore[arg-type]
+            return p if p.exists() else None
+    except (ModuleNotFoundError, FileNotFoundError, TypeError):
+        return None
 
 
 def build_drive_service(
@@ -95,17 +113,29 @@ def build_drive_service(
 
     # --- Path 3: Interactive OAuth2 Flow ---
     if not creds or not creds.valid:
-        if not credentials_path.exists():
-            raise FileNotFoundError(
-                f"credentials.json not found at '{credentials_path}'.\n"
-                "Download it from Google Cloud Console → APIs & Services → Credentials."
-            )
+        # Resolve credentials file: user-supplied path first, then the
+        # Docto-bundled fallback embedded in the package.
+        resolved_credentials = credentials_path
+        if not resolved_credentials.exists():
+            bundled = _bundled_credentials_path()
+            if bundled is not None:
+                console.print(
+                    "[dim]ℹ️  Using Docto bundled credentials. "
+                    "Run [cyan]docto-trace setup[/cyan] to use your own.[/dim]"
+                )
+                resolved_credentials = bundled
+            else:
+                raise FileNotFoundError(
+                    f"credentials.json not found at '{credentials_path}'.\n"
+                    "Run [bold]docto-trace setup[/bold] to create your own, or "
+                    "download from Google Cloud Console → APIs & Services → Credentials."
+                )
 
         console.print(
             "[cyan]🌐 Opening browser for Google Drive authorization…[/cyan]"
         )
         flow = InstalledAppFlow.from_client_secrets_file(
-            str(credentials_path), scopes=scopes
+            str(resolved_credentials), scopes=scopes
         )
         # run_local_server opens the browser and starts a local redirect server.
         creds = flow.run_local_server(port=0, open_browser=True)
