@@ -141,12 +141,47 @@ def onboard() -> None:
     # ------------------------------------------------------------------
     console.print()
     console.rule("[bold]Step 5 of 5 — AI-Readiness (Optional)[/bold]")
-    use_llm = Confirm.ask(
-        "\n  Enable [bold]AI-enhanced analysis[/bold] to get automated action plans?",
-        default=True,
-    )
+    
+    # Check for existing config
+    current_model = settings.llm_model
+    existing_key = None
+    provider_detected = None
+    
+    if current_model:
+        low_model = current_model.lower()
+        if "gpt" in low_model: provider_detected = "openai"
+        elif "claude" in low_model: provider_detected = "anthropic"
+        elif "gemini" in low_model: provider_detected = "google"
+        elif "groq" in low_model: provider_detected = "groq"
+        
+        if provider_detected:
+            env_var = {
+                "openai": "OPENAI_API_KEY",
+                "anthropic": "ANTHROPIC_API_KEY",
+                "google": "GEMINI_API_KEY",
+                "groq": "GROQ_API_KEY",
+            }.get(provider_detected)
+            # Check os.environ (which includes .env values because of load_dotenv() in config.py)
+            if env_var:
+                existing_key = os.environ.get(env_var)
 
-    if use_llm:
+    if current_model and existing_key:
+        console.print(f"\n[green]✅ AI configuration already exists:[/green]")
+        console.print(f"   [bold]Model:[/bold]    [dim]{current_model}[/dim]")
+        console.print(f"   [bold]API Key:[/bold]  [dim]******** (Found in environment)[/dim]\n")
+        
+        if Confirm.ask("  Do you want to [bold]update[/bold] this AI configuration?", default=False):
+            proceed_with_wizard = True
+        else:
+            proceed_with_wizard = False
+            console.print("\n[dim]Using existing AI configuration.[/dim]\n")
+    else:
+        proceed_with_wizard = Confirm.ask(
+            "\n  Enable [bold]AI-enhanced analysis[/bold] to get automated action plans?",
+            default=True,
+        )
+
+    if proceed_with_wizard:
         import questionary
         
         provider = questionary.select(
@@ -195,7 +230,9 @@ def onboard() -> None:
         })
         console.print("\n[green]✅ AI configuration saved to .env[/green]\n")
     else:
-        console.print("\n[dim]Skipping AI configuration.[/dim]\n")
+        # If we skipped because of existing config, we don't show "Skipping"
+        if not (current_model and existing_key):
+            console.print("\n[dim]Skipping AI configuration.[/dim]\n")
 
     # ------------------------------------------------------------------
     # Final Step — Run Scan

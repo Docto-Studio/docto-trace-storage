@@ -158,6 +158,7 @@ def scan(
             tree=storage_tree,
             llm_model=llm_model,
             max_agent_iterations=agent_iterations,
+            source=source,
         )
 
         # 6. Fetch account-wide quota (Drive + Gmail + Photos)

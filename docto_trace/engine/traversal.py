@@ -246,7 +246,8 @@ async def build_storage_tree(
     """
     root_name = await connector.get_folder_name(root_id)
 
-    console.print(f"\n[bold cyan]🔍 Scanning:[/bold cyan] [white]{root_name}[/white]\n")
+    console.print(f"\n[bold cyan]🔍 Scanning:[/bold cyan] [white]{root_name}[/white]")
+    console.print("[dim]⏳ Note: Scanning large storage sources may take several minutes depending on depth and item count.[/dim]\n")
 
     import time
     start_time = time.perf_counter()
@@ -296,10 +297,14 @@ async def build_storage_tree(
         progress.update(task_id, description="Done ✅")
 
     # Print a clean summary of the scan results
+    total_items = final_folders + final_files
+    avg_per_sec = total_items / duration if duration > 0 else 0
+    
     console.print(
         f"[bold green]✨ Scan complete![/bold green] "
         f"[dim]Processed [bold]{final_folders:,}[/bold] folders and "
-        f"[bold]{final_files:,}[/bold] files in [bold]{duration:.1f}s[/bold][/dim]\n"
+        f"[bold]{final_files:,}[/bold] files in [bold]{duration:.1f}s[/bold] "
+        f"([bold]{avg_per_sec:,.0f}[/bold] items/s)[/dim]\n"
     )
 
     # Count folders (depth-first).

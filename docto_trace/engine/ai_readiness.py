@@ -107,6 +107,7 @@ def build_ai_readiness_summary(
     tree: StorageTree,
     llm_model: str | None = None,
     max_agent_iterations: int = 30,
+    source: str = "google",
 ) -> AIReadinessScore:
     """
     Calculate the AI Readiness ratio and naming entropy.
@@ -154,7 +155,8 @@ def build_ai_readiness_summary(
                 structured_count=structured_count,
                 unstructured_count=unstructured_count,
                 avg_entropy=avg_entropy,
-                max_iterations=max_agent_iterations
+                max_iterations=max_agent_iterations,
+                source=source
             ))
         except Exception as e:
             from rich.console import Console
@@ -203,6 +205,7 @@ async def _run_autonomous_agent(
     unstructured_count: int,
     avg_entropy: float,
     max_iterations: int = 30,
+    source: str = "google",
 ) -> str:
     """Run an autonomous ReAct loop using Tool Calling to navigate the tree."""
     import json
@@ -363,13 +366,15 @@ async def _run_autonomous_agent(
 
     top_tree_map = _build_tree_map(tree.tree, max_depth=1)
     
+    source_name = "Google Drive" if source == "google" else "Local File System"
+    
     import typing
     messages: list[dict[str, typing.Any]] = [
         {
             "role": "system", 
             "content": (
-                "You are an Autonomous AI Data Archivist analyzing a Google Drive to evaluate its organizational health and AI Readiness.\n\n"
-                "Your goal is to explore the drive, identify structural patterns, naming conventions, and data silos to produce a comprehensive report.\n\n"
+                f"You are an Autonomous AI Data Archivist analyzing a {source_name} to evaluate its organizational health and AI Readiness.\n\n"
+                f"Your goal is to explore the {source_name.lower()}, identify structural patterns, naming conventions, and data silos to produce a comprehensive report.\n\n"
                 f"Use your tools iteratively to explore folders and files. Record checkpoints of findings. Once thoroughly explored (max {max_iterations} turns), finalize the report.\n\n"
                 "When calling `finalize_report`, ensure you provide:\n"
                 "- Executive Summary: High-level overview.\n"
