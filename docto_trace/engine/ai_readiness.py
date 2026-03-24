@@ -139,6 +139,10 @@ def build_ai_readiness_summary(
     # Map-Reduce LLM Analysis
     ai_analysis_report = None
     if llm_model is not None:
+        from rich.console import Console
+        err_console = Console(stderr=True)
+        err_console.print(f"[bold cyan]🤖 AI Readiness Analysis using model:[/bold cyan] [green]{llm_model}[/green]")
+        
         # Generate the top-level tree map (depth 2) for structural context
         tree_map = _build_tree_map(tree.tree, max_depth=2)
         

@@ -25,6 +25,28 @@
 
 > **Your data stays local.** The Drive API is called directly from your machine. No data passes through any Docto infrastructure.
 
+## Installation & Quick Start
+
+The fastest way to get started is using the **onboard** command. It will guide you through creating a virtual environment, installing dependencies, setting up Google Cloud credentials, and running your first scan.
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Docto-Studio/docto-trace-storage.git
+cd docto-trace-storage
+
+# 2. Run the onboarding wizard
+pip install -e .
+docto-trace onboard
+```
+
+The wizard will handle:
+1. **Environment check** (offering to create a `.venv/`)
+2. **Dependency installation** (including the optional Interactive UI)
+3. **Google Cloud setup** (guiding you through creating your own `credentials.json`)
+4. **Authentication** (logging into your Google Drive)
+5. **AI-Readiness** (configuring an LLM provider like OpenAI or Anthropic)
+6. **Initial Scan** (launching the dashboard immediately)
+
 ---
 
 ## Features

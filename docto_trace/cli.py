@@ -6,13 +6,13 @@ Registers sub-commands and exposes the --version flag.
 
 from __future__ import annotations
 
-import pyfiglet
 import typer
 from rich import print as rprint
 
 from docto_trace import __version__
 from docto_trace.commands import login as login_cmd
 from docto_trace.commands import logout as logout_cmd
+from docto_trace.commands import onboard as onboard_cmd
 from docto_trace.commands import report as report_cmd
 from docto_trace.commands import scan as scan_cmd
 from docto_trace.commands import setup as setup_cmd
@@ -32,6 +32,7 @@ app = typer.Typer(
 )
 
 # Register sub-commands (in natural workflow order).
+app.command(name="onboard")(onboard_cmd.onboard)
 app.command(name="setup")(setup_cmd.setup)
 app.command(name="login")(login_cmd.login)
 app.command(name="logout")(logout_cmd.logout)
@@ -52,9 +53,13 @@ def main(
     ),
 ) -> None:
     """Docto Trace — Storage auditing CLI."""
-    # Print the DOCTO banner at the start of every command
-    banner = pyfiglet.figlet_format("DOCTO", font="slant")
-    rprint(f"[bold cyan]{banner}[/bold cyan]")
+    # Print the DOCTO banner resiliently
+    try:
+        import pyfiglet
+        banner = pyfiglet.figlet_format("DOCTO", font="slant")
+        rprint(f"[bold cyan]{banner}[/bold cyan]")
+    except ImportError:
+        rprint("\n[bold cyan]DOCTO[/bold cyan]\n")
 
     # Branding and Vision Section
     rprint("[bold white]Apache-2.0 Open Source[/bold white] • [bold blue][link=https://docto.com.co/]docto.com.co[/link][/bold blue] • [bold magenta][link=https://github.com/Docto-Studio]GitHub[/link][/bold magenta]")
@@ -67,4 +72,5 @@ def main(
     # Show help when called with no subcommand and no flags.
     if ctx.invoked_subcommand is None:
         rprint(ctx.get_help())
+        rprint("\n[bold yellow]💡 Tip:[/bold yellow] If this is your first time, run [bold cyan]docto-trace onboard[/bold cyan] to set everything up!")
         raise typer.Exit()
