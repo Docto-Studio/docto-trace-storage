@@ -23,13 +23,12 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from datetime import datetime
-from typing import NamedTuple
+from typing import NamedTuple, Any
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from docto_trace.connectors.base import AbstractConnector
-from docto_trace.connectors.google_drive import FOLDER_MIME
 from docto_trace.schemas.storage import FileNode, FolderNode, StorageTree
 
 console = Console(stderr=True)
@@ -49,7 +48,7 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 def _item_to_file_node(item: dict, depth: int) -> FileNode:
-    """Convert a raw Drive item dict to a FileNode."""
+    """Convert a raw provider item dict to a FileNode."""
     owners = [
         o.get("emailAddress", "") for o in item.get("owners", []) if o.get("emailAddress")
     ]
@@ -87,6 +86,7 @@ async def _fetch_folder(
     queue: asyncio.Queue[_FolderWork],
     nodes: dict[str, FolderNode],
     children_map: dict[str, list[str | FileNode]],
+    _tracker: Any = None,
 ) -> None:
     """
     Fetch one folder's children under the semaphore guard, then enqueue
@@ -102,8 +102,14 @@ async def _fetch_folder(
     if progress and task_id is not None:
         progress.advance(task_id, 1)
 
+    folder_mime = connector.get_folder_mime()
+    
+    local_folders = 0
+    local_files = 0
+
     for item in items:
-        if item.get("mimeType") == FOLDER_MIME:
+        if item.get("mimeType") == folder_mime:
+            local_folders += 1
             child_depth = work.depth + 1
             # Only enqueue sub-folders within the depth limit.
             if max_depth is None or child_depth < max_depth:
@@ -122,8 +128,12 @@ async def _fetch_folder(
                 stub = FolderNode(id=item["id"], name=item.get("name", "Untitled"), depth=child_depth)
                 nodes[item["id"]] = stub
         else:
+            local_files += 1
             file_node = _item_to_file_node(item, depth=work.depth + 1)
             children_map[work.folder_id].append(file_node)
+
+    if _tracker:
+        _tracker.update(local_folders, local_files)
 
 
 async def traverse(
@@ -134,6 +144,7 @@ async def traverse(
     max_depth: int | None = None,
     _progress: Progress | None = None,
     _task_id: int | None = None,
+    _tracker: Any = None,
 ) -> FolderNode:
     """
     Iterative BFS traversal of a Drive folder tree.
@@ -186,6 +197,7 @@ async def traverse(
                     queue=queue,
                     nodes=nodes,
                     children_map=children_map,
+                    _tracker=_tracker,
                 )
             )
             pending.add(task)
@@ -234,16 +246,39 @@ async def build_storage_tree(
     """
     root_name = await connector.get_folder_name(root_id)
 
-    console.print(f"\n[bold cyan]🔍 Scanning:[/bold cyan] [white]{root_name}[/white]\n")
+    console.print(f"\n[bold cyan]🔍 Scanning:[/bold cyan] [white]{root_name}[/white]")
+    console.print("[dim]⏳ Note: Scanning large storage sources may take several minutes depending on depth and item count.[/dim]\n")
+
+    import time
+    start_time = time.perf_counter()
 
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        TextColumn("[blue]({task.fields[folders]:,} folders, {task.fields[files]:,} files)"),
         TimeElapsedColumn(),
         console=console,
         transient=True,
     ) as progress:
-        task_id = progress.add_task("Traversing folders…", total=None)
+        task_id = progress.add_task(
+            "Traversing folders…", 
+            total=None,
+            folders=0,
+            files=0
+        )
+        
+        # We need a small class to track progress between threads/tasks
+        class StatsTracker:
+            folders = 0
+            files = 0
+            
+            def update(self, folders: int, files: int):
+                self.folders += folders
+                self.files += files
+                progress.update(task_id, folders=self.folders, files=self.files)
+
+        tracker = StatsTracker()
+
         tree = await traverse(
             connector=connector,
             folder_id=root_id,
@@ -252,8 +287,25 @@ async def build_storage_tree(
             max_depth=max_depth,
             _progress=progress,
             _task_id=task_id,
+            _tracker=tracker,
         )
+        
+        duration = time.perf_counter() - start_time
+        final_folders = tracker.folders
+        final_files = tracker.files
+        
         progress.update(task_id, description="Done ✅")
+
+    # Print a clean summary of the scan results
+    total_items = final_folders + final_files
+    avg_per_sec = total_items / duration if duration > 0 else 0
+    
+    console.print(
+        f"[bold green]✨ Scan complete![/bold green] "
+        f"[dim]Processed [bold]{final_folders:,}[/bold] folders and "
+        f"[bold]{final_files:,}[/bold] files in [bold]{duration:.1f}s[/bold] "
+        f"([bold]{avg_per_sec:,.0f}[/bold] items/s)[/dim]\n"
+    )
 
     # Count folders (depth-first).
     total_folders = _count_folders(tree)

@@ -41,6 +41,7 @@ dependencies = [
   "litellm>=1.0.0",           # Used for AI Readiness Score LLM analysis
   "python-dotenv>=1.0.0",     # Loads .env variables into os.environ for LiteLLM
   "pyfiglet>=1.0.2",
+  "questionary>=2.0.0",       # Interactive CLI prompts (arrows/enter)
 ]
 
 [project.optional-dependencies]

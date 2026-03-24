@@ -19,6 +19,7 @@ from rich.table import Table
 from docto_trace.auth.google_drive import build_drive_service
 from docto_trace.config import settings
 from docto_trace.connectors.google_drive import GoogleDriveConnector
+from docto_trace.connectors.local import LocalFileSystemConnector
 from docto_trace.engine.analytics import build_insight_summary
 from docto_trace.engine.auditor import build_audit_summary
 from docto_trace.engine.traversal import build_storage_tree
@@ -29,11 +30,17 @@ err_console = Console(stderr=True)
 
 
 def scan(
+    source: str = typer.Option(
+        "google",
+        "--source",
+        "-s",
+        help="Storage source to scan: 'google' or 'local'.",
+    ),
     root_id: str = typer.Option(
-        "root",
+        None,
         "--root-id",
         "-r",
-        help="Google Drive folder ID to start the scan from. Defaults to 'root' (My Drive).",
+        help="Scan root: Google Drive folder ID OR local path. Defaults to 'root' for Google or current dir for local.",
     ),
     max_depth: Optional[int] = typer.Option(  # noqa: UP007
         None,
@@ -56,7 +63,7 @@ def scan(
         settings.credentials_path,
         "--credentials",
         "-c",
-        help="Path to the OAuth2 credentials JSON file.",
+        help="Path to the OAuth2 credentials JSON file (Google only).",
     ),
     output_dir: Path = typer.Option(
         settings.output_dir,
@@ -67,13 +74,12 @@ def scan(
     service_account: Optional[Path] = typer.Option(  # noqa: UP007
         None,
         "--service-account",
-        "-s",
-        help="Path to a service account key JSON (skips OAuth2 browser flow).",
+        "-S",
+        help="Path to a service account key JSON (Google only).",
     ),
     stale_threshold: int = typer.Option(
         settings.stale_threshold_months,
         "--stale-threshold",
-        "-S",
         help="Months without modification before a file is flagged as a zombie.",
     ),
     llm_model: Optional[str] = typer.Option(  # noqa: UP007
@@ -93,27 +99,35 @@ def scan(
     ),
 ) -> None:
     """
-    Scan Google Drive and generate a structural health report.
+    Scan Google Drive or Local File System and generate a structural health report.
 
     \b
     Examples:
-      docto-trace scan
-      docto-trace scan --root-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
-      docto-trace scan --max-depth 5 --top 20 --output ./reports/
+      docto-trace scan --source local --root-id ~/Documents
+      docto-trace scan --source google --root-id root
+      docto-trace scan --max-depth 5 --top 20
     """
     try:
-        # 1. Authenticate
-        err_console.print("[bold]🔐 Authenticating with Google Drive…[/bold]")
-        service = build_drive_service(
-            credentials_path=credentials,
-            token_path=settings.token_path,
-            service_account_path=service_account,
-        )
+        # 1. Initialize connector based on source
+        if source == "local":
+            if root_id is None:
+                root_id = os.getcwd()
+            connector = LocalFileSystemConnector()
+            # Resolve relative paths
+            root_id = str(Path(root_id).absolute())
+        else:
+            if root_id is None:
+                root_id = "root"
+            # 1a. Authenticate for Google Drive
+            err_console.print("[bold]🔐 Authenticating with Google Drive…[/bold]")
+            service = build_drive_service(
+                credentials_path=credentials,
+                token_path=settings.token_path,
+                service_account_path=service_account,
+            )
+            connector = GoogleDriveConnector(service=service, page_size=settings.page_size)
 
-        # 2. Create connector
-        connector = GoogleDriveConnector(service=service, page_size=settings.page_size)
-
-        # 3. Traverse the Drive tree (async)
+        # 2. Traverse the tree (async)
         storage_tree = asyncio.run(
             build_storage_tree(
                 connector=connector,
@@ -122,7 +136,7 @@ def scan(
             )
         )
 
-        # 4. Run Phase 1 analytics
+        # 3. Run Phase 1 analytics
         err_console.print("[bold]📊 Running analytics…[/bold]")
         insights = build_insight_summary(
             tree=storage_tree,
@@ -144,6 +158,7 @@ def scan(
             tree=storage_tree,
             llm_model=llm_model,
             max_agent_iterations=agent_iterations,
+            source=source,
         )
 
         # 6. Fetch account-wide quota (Drive + Gmail + Photos)
@@ -167,6 +182,7 @@ def scan(
 
         # 7. Build HealthReport
         report = HealthReport(
+            source=source,
             storage_tree=storage_tree,
             quota=quota,
             insights=insights,

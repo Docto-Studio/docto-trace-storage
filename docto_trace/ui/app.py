@@ -434,6 +434,7 @@ def render_overview(data: dict):
     # Storage Horizontal Bar
     quota = data.get("quota")
     tree = data.get("storage_tree", {})
+    source = data.get("source", "google")
     
     if quota and quota.get("limit_bytes", 0) > 0:
         limit = quota["limit_bytes"]
@@ -449,19 +450,23 @@ def render_overview(data: dict):
         p_free = (free_b / limit) * 100
         p_used = ((limit - free_b) / limit) * 100
         
+        # Labels
+        main_label = "Drive Files" if source == "google" else "Scanned Path"
+        other_label = "Gmail & Photos" if source == "google" else "Other"
+
         storage_html = f"""
         <div class="storage-card">
             <div class="storage-header">
-                <h3>Data Storage</h3>
+                <h3>Data Storage ({source.title()})</h3>
                 <div class="storage-badge"><span style="color:#8B5CF6;">📊</span> {human_size(limit - free_b)} of {human_size(limit)} Used ({p_used:.0f}%)</div>
             </div>
             <div class="storage-legend">
                 <div class="legend-item">
-                    <div class="legend-title"><div class="legend-dot" style="background:#F472B6;"></div>Drive Files</div>
+                    <div class="legend-title"><div class="legend-dot" style="background:#F472B6;"></div>{main_label}</div>
                     <div class="legend-meta">{human_size(drive_b)} • {p_drive:.0f}%</div>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-title"><div class="legend-dot" style="background:#A78BFA;"></div>Gmail & Photos</div>
+                    <div class="legend-title"><div class="legend-dot" style="background:#A78BFA;"></div>{other_label}</div>
                     <div class="legend-meta">{human_size(other_b)} • {p_other:.0f}%</div>
                 </div>
                 <div class="legend-item">
@@ -528,7 +533,8 @@ def render_overview(data: dict):
     if zombies:
         render_file_table(zombies, kind="zombie")
     else:
-        st.success("Your Drive is extremely clean! Zero zombie files detected.")
+        noun = "Drive" if source == "google" else "storage"
+        st.success(f"Your {noun} is extremely clean! Zero zombie files detected.")
             
     st.markdown("<br><h4>♻️ Duplicate Groups</h4>", unsafe_allow_html=True)
     st.markdown("<div class='subtitle'>Redundant data creating noise in your Centralized Memory.</div>", unsafe_allow_html=True)
