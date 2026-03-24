@@ -64,17 +64,25 @@ def onboard() -> None:
         
         # Transition automatically
         if venv_python.exists():
+            # Path to venv's pip and docto-trace shim
+            if sys.platform == "win32":
+                venv_pip = venv_dir / "Scripts" / "pip.exe"
+                venv_bin = venv_dir / "Scripts" / "docto-trace.exe"
+            else:
+                venv_pip = venv_dir / "bin" / "pip"
+                venv_bin = venv_dir / "bin" / "docto-trace"
+
+            # 1. Bootstrap: Install the package itself in the venv so 'docto_trace' is findable
+            with console.status("[bold]🔧 Bootstrapping virtual environment…[/bold]", spinner="dots"):
+                _run_command([str(venv_pip), "install", "-e", ".", "-q"])
+
             console.print(
                 f"\n[bold green]🚀 Transitioning to virtual environment...[/bold green]\n"
-                f"[dim]Re-spawning: {venv_python} -m docto_trace onboard[/dim]\n"
+                f"[dim]Executing: {venv_bin} onboard[/dim]\n"
             )
-            # Use os.execv to REPLACE the current process with the venv python
-            # This is the "magic" that makes it seamless.
-            # We need to add the current directory to PYTHONPATH so it finds 'docto_trace'
-            # before it's even installed in the venv.
-            os.environ["PYTHONPATH"] = os.getcwd()
-            args = [str(venv_python), "-m", "docto_trace", "onboard"]
-            os.execv(args[0], args)
+            
+            # 2. Re-spawn using the venv's own entry point
+            os.execv(str(venv_bin), [str(venv_bin), "onboard"])
         else:
             console.print(
                 "\n[red]❌ Could not find virtual environment python.[/red] "
@@ -195,13 +203,59 @@ def onboard() -> None:
     console.print()
     console.rule("[bold green]All systems go! 🚀[/bold green]")
     if Confirm.ask("\n  Start your first scan now?", default=True):
-        console.print("\n[bold cyan]Starting scan...[/bold cyan]")
+        import questionary
+        source = questionary.select(
+            "What do you want to scan first?",
+            choices=[
+                "Google Drive",
+                "Local File System"
+            ]
+        ).ask()
         
-        # We run it as a subprocess to ensure clean exit/entry and proper typer handling
         cmd = [sys.executable, "-m", "docto_trace", "scan"]
+        
+        if source == "Local File System":
+            home = str(Path.home())
+            common_paths = {
+                f"Current Directory ({os.getcwd()})": os.getcwd(),
+                f"Home Directory ({home})": home,
+                "Desktop": str(Path.home() / "Desktop"),
+                "Documents": str(Path.home() / "Documents"),
+                "Downloads": str(Path.home() / "Downloads"),
+                "Custom Path...": "CUSTOM"
+            }
+            
+            # Filter only existing paths
+            choices = [k for k, v in common_paths.items() if v == "CUSTOM" or os.path.exists(v)]
+            
+            path_choice = questionary.select(
+                "Which folder do you want to scan?",
+                choices=choices
+            ).ask()
+            
+            if not path_choice:
+                raise typer.Exit(code=1)
+                
+            root_path = common_paths[path_choice]
+            
+            if root_path == "CUSTOM":
+                console.print("\n[dim]💡 Tip: You can drag and drop a folder into this terminal window.[/dim]")
+                root_path = Prompt.ask("  Enter the absolute path to scan").strip()
+                # Remove quotes often added by OS drag-and-drop
+                root_path = root_path.replace("'", "").replace('"', "")
+            
+            if not os.path.exists(root_path):
+                console.print(f"[bold red]❌ Error:[/bold red] Path does not exist: {root_path}")
+                raise typer.Exit(code=1)
+                
+            cmd.extend(["--source", "local", "--root-id", root_path])
+        else:
+            cmd.extend(["--source", "google"])
+
         if not install_ui:
             cmd.append("--no-ui")
             
+        console.print(f"\n[bold cyan]Starting {source} scan...[/bold cyan]")
         subprocess.run(cmd, check=False)
     else:
         console.print(

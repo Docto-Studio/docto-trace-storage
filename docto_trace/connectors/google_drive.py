@@ -147,6 +147,10 @@ class GoogleDriveConnector(AbstractConnector):
             "limit":             int(quota.get("limit", 0)),
         }
 
+    def get_folder_mime(self) -> str:
+        """Return the Google Drive folder MIME type."""
+        return FOLDER_MIME
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

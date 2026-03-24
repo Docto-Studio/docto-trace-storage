@@ -189,6 +189,7 @@ class HealthReport(BaseModel):
 
     schema_version: str = Field(default="0.2.0")
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    source: str = Field(default="google", description="Scan source: 'google' or 'local'.")
 
     # Core scan result
     storage_tree: StorageTree

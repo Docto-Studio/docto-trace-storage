@@ -40,3 +40,10 @@ class AbstractConnector(ABC):
         Used to populate the root folder name in the StorageTree.
         """
         ...
+
+    @abstractmethod
+    def get_folder_mime(self) -> str:
+        """
+        Return the provider-specific MIME type used to identify folders.
+        """
+        ...
