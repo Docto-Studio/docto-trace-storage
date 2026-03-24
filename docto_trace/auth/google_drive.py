@@ -115,21 +115,27 @@ def build_drive_service(
     if not creds or not creds.valid:
         # Resolve credentials file: user-supplied path first, then the
         # Docto-bundled fallback embedded in the package.
+        from docto_trace.config import settings
         resolved_credentials = credentials_path
+        
+        # If the user-supplied path doesn't exist, we fallback to the effective path 
+        # (which includes the bundled logic).
         if not resolved_credentials.exists():
-            bundled = _bundled_credentials_path()
-            if bundled is not None:
-                console.print(
-                    "[dim]ℹ️  Using Docto bundled credentials. "
-                    "Run [cyan]docto-trace setup[/cyan] to use your own.[/dim]"
-                )
-                resolved_credentials = bundled
-            else:
-                raise FileNotFoundError(
-                    f"credentials.json not found at '{credentials_path}'.\n"
-                    "Run [bold]docto-trace setup[/bold] to create your own, or "
-                    "download from Google Cloud Console → APIs & Services → Credentials."
-                )
+            resolved_credentials = settings.effective_credentials_path
+
+        if not resolved_credentials.exists():
+            raise FileNotFoundError(
+                f"credentials.json not found at '{credentials_path}'.\n"
+                "Run [bold]docto-trace setup[/bold] to create your own, or "
+                "download from Google Cloud Console → APIs & Services → Credentials."
+            )
+
+        # If it's the bundled one, show a hint
+        if "docto_client.json" in str(resolved_credentials):
+            console.print(
+                "[dim]ℹ️  Using Docto bundled credentials. "
+                "Run [cyan]docto-trace setup[/cyan] to use your own.[/dim]"
+            )
 
         console.print(
             "[cyan]🌐 Opening browser for Google Drive authorization…[/cyan]"
