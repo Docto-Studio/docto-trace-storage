@@ -115,14 +115,19 @@ def onboard() -> None:
     # ------------------------------------------------------------------
     console.print()
     console.rule("[bold]Step 3 of 5 — Google Cloud Credentials[/bold]")
-    if not settings.credentials_path.exists():
+    
+    # Check for local OR bundled credentials
+    effective_creds = settings.effective_credentials_path
+    
+    if not effective_creds.exists():
         console.print(
             "\n[yellow]No credentials.json found.[/yellow] We'll start the guided setup wizard."
         )
         # Use subprocess to avoid typer-decoration issues
         subprocess.run([sys.executable, "-m", "docto_trace", "setup"], check=False)
     else:
-        console.print(f"\n[green]✅ Using existing credentials at [dim]{settings.credentials_path}[/dim][/green]\n")
+        creds_type = "bundled" if "docto_client.json" in str(effective_creds) else "custom"
+        console.print(f"\n[green]✅ Using {creds_type} credentials at [dim]{effective_creds}[/dim][/green]\n")
 
     # ------------------------------------------------------------------
     # Step 4 — Authentication (Login)

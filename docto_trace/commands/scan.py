@@ -60,7 +60,7 @@ def scan(
         help="Nesting depth at which a folder is flagged as 'deep'.",
     ),
     credentials: Path = typer.Option(
-        settings.credentials_path,
+        settings.effective_credentials_path,
         "--credentials",
         "-c",
         help="Path to the OAuth2 credentials JSON file (Google only).",

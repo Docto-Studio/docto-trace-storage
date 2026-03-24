@@ -30,6 +30,24 @@ class Settings(BaseSettings):
         default=Path("credentials.json"),
         description="Path to your Google OAuth2 Desktop App credentials JSON file.",
     )
+
+    @property
+    def effective_credentials_path(self) -> Path:
+        """
+        Returns the local credentials.json if it exists, 
+        otherwise falls back to the bundled docto_client.json inside the package.
+        """
+        if self.credentials_path.exists():
+            return self.credentials_path
+        
+        # Fallback to bundled credentials inside the package data
+        import importlib.resources
+        try:
+            ref = importlib.resources.files("docto_trace.data").joinpath("docto_client.json")
+            with importlib.resources.as_file(ref) as p:
+                return Path(p)
+        except (ModuleNotFoundError, FileNotFoundError):
+            return self.credentials_path # Fallback to default path if bundled not found
     token_path: Path = Field(
         default=Path("token.json"),
         description="Where to cache the user's OAuth2 token after first login.",
