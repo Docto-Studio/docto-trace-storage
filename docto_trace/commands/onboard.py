@@ -43,73 +43,72 @@ def onboard() -> None:
     # Step 1 — Environment Check (Virtual Env)
     # ------------------------------------------------------------------
     console.rule("[bold]Step 1 of 5 — Environment Check[/bold]")
-    is_venv = sys.prefix != sys.base_prefix
-    venv_dir = Path(".venv")
     
-    # Path to venv's python executable
-    if sys.platform == "win32":
-        venv_python = venv_dir / "Scripts" / "python.exe"
-    else:
-        venv_python = venv_dir / "bin" / "python"
-
-    if not is_venv:
-        console.print(
-            "\n[yellow]⚠️  You are not running in a virtual environment.[/yellow]\n"
-            "It is highly recommended to use a venv to keep your global Python clean.\n"
-        )
-        if not venv_dir.exists():
-            if Confirm.ask("  Create a virtual environment in [bold].venv/[/bold] now?", default=True):
-                _run_command([sys.executable, "-m", "venv", str(venv_dir)])
-                console.print("\n[green]✅ Virtual environment created.[/green]")
+    is_dev_mode = Path("pyproject.toml").exists()
+    is_venv = sys.prefix != sys.base_prefix
+    
+    if is_dev_mode:
+        console.print("[dim]Dev Mode detected (pyproject.toml found). Ensuring environment is ready...[/dim]")
+        venv_dir = Path(".venv")
         
-        # Transition automatically
-        if venv_python.exists():
-            # Path to venv's pip and docto-trace shim
-            if sys.platform == "win32":
-                venv_pip = venv_dir / "Scripts" / "pip.exe"
-                venv_bin = venv_dir / "Scripts" / "docto-trace.exe"
-            else:
-                venv_pip = venv_dir / "bin" / "pip"
-                venv_bin = venv_dir / "bin" / "docto-trace"
-
-            # 1. Bootstrap: Install the package itself in the venv so 'docto_trace' is findable
-            with console.status("[bold]🔧 Bootstrapping virtual environment…[/bold]", spinner="dots"):
-                _run_command([str(venv_pip), "install", "-e", ".", "-q"])
-
-            console.print(
-                f"\n[bold green]🚀 Transitioning to virtual environment...[/bold green]\n"
-                f"[dim]Executing: {venv_bin} onboard[/dim]\n"
-            )
-            
-            # 2. Re-spawn using the venv's own entry point
-            os.execv(str(venv_bin), [str(venv_bin), "onboard"])
+        # Path to venv's python executable
+        if sys.platform == "win32":
+            venv_python = venv_dir / "Scripts" / "python.exe"
         else:
+            venv_python = venv_dir / "bin" / "python"
+
+        if not is_venv:
             console.print(
-                "\n[red]❌ Could not find virtual environment python.[/red] "
-                "Please activate it manually."
+                "\n[yellow]⚠️  You are running from source but not in a virtual environment.[/yellow]\n"
             )
-            raise typer.Exit(code=1)
+            if not venv_dir.exists():
+                if Confirm.ask("  Create a local .venv/ for development?", default=True):
+                    _run_command([sys.executable, "-m", "venv", str(venv_dir)])
+                    console.print("\n[green]✅ Virtual environment created.[/green]")
+            
+            if venv_python.exists():
+                if sys.platform == "win32":
+                    venv_pip = venv_dir / "Scripts" / "pip.exe"
+                    venv_bin = venv_dir / "Scripts" / "docto-trace.exe"
+                else:
+                    venv_pip = venv_dir / "bin" / "pip"
+                    venv_bin = venv_dir / "bin" / "docto-trace"
+
+                with console.status("[bold]🔧 Bootstrapping dev environment…[/bold]", spinner="dots"):
+                    _run_command([str(venv_pip), "install", "-e", ".", "-q"])
+
+                console.print(f"\n[bold green]🚀 Transitioning to dev venv...[/bold green]\n")
+                os.execv(str(venv_bin), [str(venv_bin), "onboard"])
+        else:
+            console.print(f"\n[green]✅ Running in dev venv:[/green] [dim]{sys.prefix}[/dim]\n")
     else:
-        console.print(f"\n[green]✅ Running in virtual environment:[/green] [dim]{sys.prefix}[/dim]\n")
+        # User Mode - Just check if we are in a venv (recommended but not forced)
+        if is_venv:
+            console.print(f"\n[green]✅ Running in virtual environment:[/green] [dim]{sys.prefix}[/dim]\n")
+        else:
+            console.print("\n[dim]Running in global python environment (not in a venv).[/dim]\n")
 
     # ------------------------------------------------------------------
     # Step 2 — Install Dependencies
     # ------------------------------------------------------------------
     console.print()
     console.rule("[bold]Step 2 of 5 — Dependencies & UI[/bold]")
+    
     install_ui = Confirm.ask(
         "\n  Do you want to install the [bold]Interactive UI[/bold]? (requires streamlit/plotly)",
         default=True,
     )
     
-    extras = "[ui]" if install_ui else ""
-    
-    # Use a Rich status spinner for feedback
-    with console.status(f"[bold]📦 Installing docto-trace-storage{extras}…[/bold]", spinner="dots"):
-        # We use -e . so it's always up to date during development
-        _run_command([sys.executable, "-m", "pip", "install", "-e", f".{extras}", "-q"])
-    
-    console.print("[green]✅ Dependencies installed.[/green]\n")
+    if install_ui:
+        with console.status("[bold]📦 Installing UI extras…[/bold]", spinner="dots"):
+            if is_dev_mode:
+                _run_command([sys.executable, "-m", "pip", "install", "-e", ".[ui]", "-q"])
+            else:
+                # Global/User mode: install from PyPI
+                _run_command([sys.executable, "-m", "pip", "install", "docto-trace-storage[ui]", "-q"])
+        console.print("[green]✅ UI dependencies ready.[/green]\n")
+    else:
+        console.print("[dim]Skipping UI installation.[/dim]\n")
 
     # ------------------------------------------------------------------
     # Step 3 — Google Cloud Setup

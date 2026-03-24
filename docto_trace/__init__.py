@@ -6,6 +6,6 @@ try:
     __version__ = version("docto-trace-storage")
 except PackageNotFoundError:
     # Fallback when running directly from source without pip install.
-    __version__ = "0.2.2"
+    __version__ = "0.2.3"
 
 __author__ = "Docto Studio"
